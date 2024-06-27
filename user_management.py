@@ -9,6 +9,8 @@ class UserManagement:
             database="gestion_casos"  
         )
         self.cursor = self.db.cursor(dictionary=True)
+        self.users = self.get_users()
+
 
 #consultas para la tabla users
 
@@ -26,6 +28,7 @@ class UserManagement:
             sql = "INSERT INTO users (username, password, role, first_name, last_name, dni) VALUES (%s, %s, %s, %s, %s, %s)"
             self.cursor.execute(sql, (username, password, role, first_name, last_name, dni))
             self.db.commit()
+            self.users = self.get_users()
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             self.db.rollback()
@@ -48,6 +51,24 @@ class UserManagement:
             print(f"Error: {err}")
             return None
 
+    def get_user_by_last_name(self, last_name):
+        try:
+            sql = "SELECT * FROM users WHERE last_name = %s"
+            self.cursor.execute(sql, (last_name,))
+            return self.cursor.fetchone()
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return None
+        
+    def get_user_by_first_name(self, first_name):
+        try:
+            sql = "SELECT * FROM users WHERE first_name = %s"
+            self.cursor.execute(sql, (first_name,))
+            return self.cursor.fetchone()
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return None
+        
     def get_users(self):
         try:
             self.cursor.execute("SELECT * FROM users")
@@ -75,12 +96,22 @@ class UserManagement:
                 user['last_name'] = last_name
                 user['dni'] = dni
                 break
+        try:
+            sql = "UPDATE users SET password = %s, role = %s, first_name = %s, last_name = %s, dni = %s WHERE username = %s"
+            self.cursor.execute(sql, (password, role, first_name, last_name, dni, username))
+            self.db.commit()
+            self.users = self.get_users()
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            self.db.rollback()
+
             
     def delete_user(self, username):
         try:
             sql = "DELETE FROM users WHERE username = %s"
             self.cursor.execute(sql, (username,))
             self.db.commit()
+            self.users = self.get_users()
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             self.db.rollback()

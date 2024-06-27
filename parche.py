@@ -296,34 +296,54 @@ else:
 
         elif user_action == "Editar Usuario":
             st.subheader("Editar Usuario")
-            with st.form("find_user_form"):
-                username = st.text_input("Nombre de Usuario a Editar")
-                find_user_button = st.form_submit_button("Buscar Usuario")
 
-                if find_user_button:
-                    user = user_management.get_user_by_username(username)
-                    if user:
-                        st.session_state.edit_user = user
-                    else:
-                        st.warning(f"No se encontró un usuario con nombre {username}")
+            with st.form("find_user_form"):
+                search_type = st.radio(
+                    "Buscar usuario por:",
+                    ('Apellido', 'Nombre')
+                )
+        
+                if search_type == 'Apellido':
+                    last_name = st.text_input("Apellido de Usuario a Editar")
+                    find_user_button = st.form_submit_button("Buscar Usuario")
+                    if find_user_button:
+                        user = user_management.get_user_by_last_name(last_name)
+                        if user:
+                            st.session_state.edit_user = user
+                        else:
+                            st.warning(f"No se encontró un usuario con apellido {last_name}")
+                elif search_type == 'Nombre':
+                    first_name = st.text_input("Nombre del Usuario a Editar")
+                    find_user_button = st.form_submit_button("Buscar Usuario")
+                    if find_user_button:
+                        user = user_management.get_user_by_first_name(first_name)
+                        if user:
+                            st.session_state.edit_user = user
+                        else:
+                            st.warning(f"No se encontró un usuario con nombre {first_name}")
 
             if 'edit_user' in st.session_state:
                 user = st.session_state.edit_user
                 with st.form("edit_user_form"):
-                    username = st.text_input("Nombre de Usuario", value=user.get('username', ''))
-                    password = st.text_input("Nueva Contraseña", type='password')
-                    role = st.selectbox("Rol", ["administrador", "usuario"], index=["administrador", "usuario"].index(user.get('role', 'usuario')))
-                    first_name = st.text_input("Nombres", value=user.get('first_name', ''))
-                    last_name = st.text_input("Apellidos", value=user.get('last_name', ''))
-                    dni = st.text_input("DNI", value=user.get('dni', ''), max_chars=8)
+                    new_first_name = st.text_input("Nuevo Nombre", value=user['first_name'])
+                    new_last_name = st.text_input("Nuevo Apellido", value=user['last_name'])
+                    new_dni = st.text_input("Nuevo DNI", value=user['dni'])
+                    new_role = st.text_input("Nuevo Rol", value=user['role'])
+                    new_password = st.text_input("Nueva Contraseña", type='password')
+                    submit_button = st.form_submit_button("Actualizar Usuario")
             
-                    edit_user_button = st.form_submit_button("Actualizar Usuario")
-            
-                    if edit_user_button:
-                        if len(dni) == 8 and dni.isdigit():
-                            user_management.update_user(username, password, role, first_name, last_name, dni)
-                            st.success(f"Usuario {username} actualizado exitosamente")
-                            st.session_state.pop('edit_user')
+                    if submit_button:
+                        user_management.update_user(
+                            username=user['username'],
+                            password=new_password,
+                            role=new_role,
+                            first_name=new_first_name,
+                            last_name=new_last_name,
+                            dni=new_dni
+                        )
+                        st.success("Usuario actualizado correctamente")
+                        del st.session_state.edit_user
+
 
         elif user_action == "Eliminar Usuario":
             st.subheader("Eliminar Usuario")
