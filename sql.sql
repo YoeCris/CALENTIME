@@ -26,4 +26,7 @@ CREATE TABLE cases (
     FOREIGN KEY (reviewer) REFERENCES users(username)
 );
 
+ALTER TABLE cases
+DROP COLUMN review_file;
 
+DESCRIBE cases;

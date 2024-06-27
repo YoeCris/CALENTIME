@@ -83,10 +83,10 @@ class UserManagement:
             print(f"Error: {err}")
             self.db.rollback()
 
-    def create_case(self, code, investigator_last_name, investigator_first_name, dni, reviewer, description, stage, deadline, status, urgency_level, review_file=None):
+    def create_case(self, code, investigated_last_name, investigated_first_name, dni, reviewer, stage):
         try:
-            sql = "INSERT INTO cases (code, investigator_last_name, investigator_first_name, dni, reviewer, description, stage, deadline, status, urgency_level, review_file) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-            self.cursor.execute(sql, (code, investigator_last_name, investigator_first_name, dni, reviewer, description, stage, deadline, status, urgency_level, review_file))
+            sql = "INSERT INTO cases (code, investigated_last_name, investigated_first_name, dni, reviewer, stage) VALUES (%s, %s, %s, %s, %s, %s)"
+            self.cursor.execute(sql, (code, investigated_last_name, investigated_first_name, dni, reviewer, stage))
             self.db.commit()
         except mysql.connector.Error as err:
             print(f"Error: {err}")

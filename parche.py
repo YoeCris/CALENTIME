@@ -90,13 +90,7 @@ else:
                 'investigator_first_name': 'Nombre del Investigado',
                 'dni': 'DNI del Investigado',
                 'reviewer': 'Encargado de Revisar el Documento',
-                'description': 'Contenido del Documento',
-                'created_at': 'Fecha de Creación',
                 'stage': 'Etapa',
-                'deadline': 'Fecha Límite',
-                'status': 'Estado',
-                'urgency_level': 'Nivel de Urgencia',
-                'review_file': 'Archivo de Revisión'
             })
             st.dataframe(df)
         else:
@@ -128,12 +122,13 @@ else:
                 normal_users = [user['username'] for user in users if user['role'] == 'usuario']
                 reviewer = st.selectbox("Encargado de Revisar el Documento", normal_users)
 
-                doc_content = st.text_area("Contenido del Documento")
+                stage = st.selectbox("Etapa del caso", ['preparatoria', 'intermedia', 'juzgamiento'])
+
                 add_doc_button = st.form_submit_button("Agregar Documento")
         
                 if add_doc_button:
                     if dni:
-                        user_management.create_document(doc_code, last_name, first_name, dni, reviewer, doc_content)
+                        user_management.create_case(doc_code, last_name, first_name, dni, reviewer, stage)
                         st.success(f"Documento {doc_code} agregado exitosamente")
 
         elif doc_action == "Editar Documento":
