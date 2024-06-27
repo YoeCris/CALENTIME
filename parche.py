@@ -82,12 +82,12 @@ else:
     
         if casos:
             df = pd.DataFrame(casos)
-            df.columns = ['id', 'code', 'investigator_last_name', 'investigator_first_name', 'dni', 'reviewer', 'description', 'created_at', 'stage', 'deadline', 'status', 'urgency_level', 'review_file']
+            df.columns = ['id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'stage']
             df = df.rename(columns={
                 'id': 'ID',
                 'code': 'Código del Documento',
-                'investigator_last_name': 'Apellidos del Investigado',
-                'investigator_first_name': 'Nombre del Investigado',
+                'investigated_last_name': 'Apellidos del Investigado',
+                'investigated_first_name': 'Nombre del Investigado',
                 'dni': 'DNI del Investigado',
                 'reviewer': 'Encargado de Revisar el Documento',
                 'stage': 'Etapa',
