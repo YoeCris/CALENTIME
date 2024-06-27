@@ -76,12 +76,12 @@ else:
         st.subheader("Ver Documentos")
     
         if st.session_state.role == 'administrador':
-            documents = user_management.get_all_cases()
+            casos = user_management.get_all_cases()
         else:
-            documents = user_management.get_cases_by_reviewer(st.session_state.username)
+            casos = user_management.get_cases_by_reviewer(st.session_state.username)
     
-        if documents:
-            df = pd.DataFrame(documents)
+        if casos:
+            df = pd.DataFrame(casos)
             df.columns = ['id', 'code', 'investigator_last_name', 'investigator_first_name', 'dni', 'reviewer', 'description', 'created_at', 'stage', 'deadline', 'status', 'urgency_level', 'review_file']
             df = df.rename(columns={
                 'id': 'ID',
@@ -100,19 +100,19 @@ else:
         st.subheader("Administrar Documentos")
     
         if st.session_state.role == 'administrador':
-            doc_action_options = ["Agregar Documento", "Editar Documento", "Eliminar Documento"]
+             case_actions_options = ["Agregar Documento", "Editar Documento", "Eliminar Documento"]
         else:
-            doc_action_options = ["Agregar Documento", "Editar Documento"]
+            case_actions_options  = ["Agregar Documento", "Editar Documento"]
     
-        doc_action = st.sidebar.radio("Seleccione una acción:", doc_action_options)
+        case_action = st.sidebar.radio("Seleccione una acción:", case_actions_options )
 
-        if doc_action == "Agregar Documento":
+        if case_action == "Agregar Documento":
             st.subheader("Agregar Nuevo Documento")
     
             with st.form("add_document_form"):
-                doc_code = st.text_input("Código del Documento")
-                last_name = st.text_input("Apellidos del Investigado")
-                first_name = st.text_input("Nombre del Investigado")
+                code = st.text_input("Código del Documento")
+                investigated_last_name = st.text_input("Apellidos del Investigado")
+                investigated_first_name = st.text_input("Nombre del Investigado")
                 dni = st.text_input("DNI del Investigado", max_chars=8)
         
                 if len(dni) != 8 or not dni.isdigit():
@@ -124,34 +124,71 @@ else:
 
                 stage = st.selectbox("Etapa del caso", ['preparatoria', 'intermedia', 'juzgamiento'])
 
-                add_doc_button = st.form_submit_button("Agregar Documento")
+                add_case_botton = st.form_submit_button("Agregar Documento")
         
-                if add_doc_button:
+                if add_case_botton:
                     if dni:
-                        user_management.create_case(doc_code, last_name, first_name, dni, reviewer, stage)
-                        st.success(f"Documento {doc_code} agregado exitosamente")
+                        user_management.create_case(code, investigated_last_name, investigated_first_name, dni, reviewer, stage)
+                        st.success(f"Documento {code} agregado exitosamente")
 
-        elif doc_action == "Editar Documento":
+        elif case_action == "Editar Documento":
             st.subheader("Editar Documento")
         
             with st.form("find_document_form"):
-                doc_id = st.text_input("ID del Documento a Editar")
-                find_doc_button = st.form_submit_button("Buscar Documento")
-        
-            if find_doc_button:
-                document = user_management.get_document_by_id(doc_id)
-                if document:
-                    st.session_state.edit_document = document
+                search_criterion = st.selectbox("Buscar por", ["Encargado", "DNI"])
+                if search_criterion == "Encargado":
+                    users = user_management.get_users()
+                    reviewers = [user['username'] for user in users if user['role'] == 'usuario']
+                    selected_reviewer = st.selectbox("Seleccione el Encargado", reviewers)
                 else:
-                    st.warning(f"No se encontró un documento con ID {doc_id}")
+                    search_value = st.text_input(f"Ingrese {search_criterion}")
 
-            if 'edit_document' in st.session_state:
-                document = st.session_state.edit_document
+                find_case_botton = st.form_submit_button("Buscar caso")
+
+        
+            if find_case_botton:
+                criterio_map = {
+                    "Encargado" : "reviewer",
+                    "DNI" : "dni"
+                }
+                criterion = criterio_map.get(search_criterion)
+
+                if criterion == "reviewer":
+                    cases = user_management.get_cases_by_reviewer(search_value)
+
+                    if cases:
+                        df = pd.DataFrame(cases)
+                        st.dataframe(df)
+                        selected_case_id = st.selectbox("Seleccione el Id del caso a editar", df['id'])
+                        if st.button("Cargar Caso"):
+                            case = user_management.get_case(selected_case_id)
+                            st.session_state.edit_case = case
+                    else:
+                        st.warning(f"No se encontraron casos para el encargado {search_value}")
+            
+                else: 
+                    cases = user_management.get_cases_by_dni(search_value)
+                    if cases:
+                        if len(cases) > 1:
+                            df = pd.DataFrame(cases)
+                            st.dataframe(df)
+                            selected_case_id = st.selectbox("Seleccione el Id del caso a editar", df['id'])
+                            if st.button("Cargar Caso"):
+                                case = user_management.get_case(selected_case_id)
+                                st.session_state.edit_case = case
+                        else:
+                            case = cases[0]
+                            st.session_state.edit_case = case
+                    else:
+                        st.warning(f"No se encontró un caso con el DNI {search_value}")
+
+            if 'edit_case' in st.session_state:
+                case = st.session_state.edit_case
                 with st.form("edit_document_form"):
-                    doc_code = st.text_input("Código del Documento", value=document.get('doc_code', ''))
-                    last_name = st.text_input("Apellidos del Investigado", value=document.get('last_name', ''))
-                    first_name = st.text_input("Nombre del Investigado", value=document.get('first_name', ''))
-                    dni = st.text_input("DNI del Investigado", value=document.get('dni', ''), max_chars=8)
+                    code = st.text_input("Código del Documento", value=case.get('code', ''))
+                    investigated_last_name = st.text_input("Apellidos del Investigado", value=case.get('investigated_last_name', ''))
+                    investigated_first_name = st.text_input("Nombre del Investigado", value=case.get('investigated_first_name', ''))
+                    dni = st.text_input("DNI del Investigado", value=case.get('dni', ''), max_chars=8)
             
                     if len(dni) != 8 or not dni.isdigit():
                         st.warning("DNI inválido")
@@ -159,31 +196,82 @@ else:
             
                     users = user_management.get_users()
                     normal_users = [user['username'] for user in users if user['role'] == 'usuario']
-                    reviewer = st.selectbox("Encargado de Revisar el Documento", normal_users, index=normal_users.index(document.get('reviewer', '')))
+                    reviewer = st.selectbox("Encargado de Revisar el Documento", normal_users, index=normal_users.index(case.get('reviewer', '')))
 
-                    doc_content = st.text_area("Contenido del Documento", value=document.get('content', ''))
-                    edit_doc_button = st.form_submit_button("Actualizar Documento")
+                    stage = st.selectbox("Etapa del Caso", ['Preparatoria', 'Intermedia', 'Juzgamiento'], index=['preparatoria', 'intermedia', 'juzgamiento'].index(case.get('stage', 'preparatoria')))
+                    edit_cas_button = st.form_submit_button("Actualizar Caso")
             
-                    if edit_doc_button and dni:
-                        user_management.update_document(document['id'], doc_code, last_name, first_name, dni, reviewer, doc_content)
-                        st.success(f"Documento {doc_code} actualizado exitosamente")
-                        st.session_state.pop('edit_document')
+                    if edit_cas_button and dni:
+                        user_management.update_case(case['id'], code, investigated_last_name, investigated_first_name, dni, reviewer, stage)
+                        st.success(f"Caso {code} actualizado exitosamente")
+                        st.session_state.pop('edit_case')
 
-        elif doc_action == "Eliminar Documento":
+        elif case_action == "Eliminar Documento":
             st.subheader("Eliminar Documento")
 
-            with st.form("delete_document_form"):
-                doc_id = st.text_input("ID del Documento a Eliminar")
-                delete_doc_button = st.form_submit_button("Eliminar Documento")
+            with st.form("find_document_form"):
+                search_criterion = st.selectbox("Buscar por", ["Encargado", "DNI"])
+                if search_criterion == "Encargado":
+                    users = user_management.get_users()
+                    reviewers = [user['username'] for user in users if user['role'] == 'usuario']
+                    selected_reviewer = st.selectbox("Seleccione el Encargado", reviewers)
+                else:
+                    search_value = st.text_input(f"Ingrese {search_criterion}")
 
-                if delete_doc_button:
-                    document = user_management.get_document_by_id(doc_id)
-                    if document:
-                        user_management.delete_document(document['id'])
-                        st.success(f"Documento con ID {doc_id} eliminado exitosamente")
+                find_case_botton = st.form_submit_button("Buscar caso")
+
+        
+            if find_case_botton:
+                criterio_map = {
+                    "Encargado" : "reviewer",
+                    "DNI" : "dni"
+                }
+                criterion = criterio_map.get(search_criterion)
+
+                if criterion == "reviewer":
+                    
+
+                    cases = user_management.get_cases_by_reviewer(selected_reviewer)
+
+                    if cases:
+                        df = pd.DataFrame(cases)
+                        selected_case_id = st.selectbox("Seleccione el Id del caso a eliminar", df['id'])
+                        if st.button("Eliminar Caso"):
+                            confirmation = st.checkbox(f"Confirmar eliminación del caso con ID {selected_case_id}")
+                            if confirmation:
+                                user_management.delete_case(selected_case_id)
+                                st.success(f"Caso con ID {selected_case_id} eliminado exitosamente")
+                            else:
+                                st.warning("Eliminación cancelada")
                     else:
-                        st.warning(f"No se encontró un documento con ID {doc_id}")
-
+                        st.warning(f"No se encontraron casos para el encargado {selected_reviewer}")
+                elif criterion == "dni":
+                    cases = user_management.get_cases_by_dni(search_value)
+                    if cases:
+                        if len(cases) > 1:
+                            df = pd.DataFrame(cases)
+                            st.dataframe(df)
+                            selected_case_id = st.selectbox("Seleccione el Id del caso a eliminar", df['id'])
+                            if st.button("Eliminar Caso"):
+                                confirmation = st.checkbox(f"Confirmar eliminación del caso con ID {selected_case_id}")
+                                if confirmation:
+                                    user_management.delete_case(selected_case_id)
+                                    st.success(f"Caso con ID {selected_case_id} eliminado exitosamente")
+                                else:
+                                    st.warning("Eliminación cancelada")
+                        
+                        else:
+                            case = cases[0]
+                            st.session_state.edit_case = case  # Actualizar el estado edit_case
+                            confirmation = st.checkbox(f"Confirmar eliminación del caso con ID {case['id']}")
+                            if confirmation:
+                                user_management.delete_case(case['id'])
+                                st.success(f"Caso con ID {case['id']} eliminado exitosamente")
+                            else:
+                                st.warning("Eliminación cancelada")
+                    else:
+                        st.warning(f"No se encontró un caso con el DNI {search_value}")
+                    
     elif choice == "Administrar Usuarios" and st.session_state.role == 'administrador':
         st.subheader("Administrar Usuarios")
         user_action = st.sidebar.radio("Seleccione una acción:", ["Agregar Usuario", "Editar Usuario", "Eliminar Usuario"])

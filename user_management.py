@@ -10,6 +10,8 @@ class UserManagement:
         )
         self.cursor = self.db.cursor(dictionary=True)
 
+#consultas para la tabla users
+
     def create_default_superusers(self):
         try:
             self.cursor.execute("SELECT * FROM users WHERE username = 'admin'")
@@ -83,6 +85,8 @@ class UserManagement:
             print(f"Error: {err}")
             self.db.rollback()
 
+#consultas para la tabla cases:
+
     def create_case(self, code, investigated_last_name, investigated_first_name, dni, reviewer, stage):
         try:
             sql = "INSERT INTO cases (code, investigated_last_name, investigated_first_name, dni, reviewer, stage) VALUES (%s, %s, %s, %s, %s, %s)"
@@ -92,19 +96,38 @@ class UserManagement:
             print(f"Error: {err}")
             self.db.rollback()
 
-    def get_case_by_id(self, case_id):
+    def get_case(self, search_value, criterion='id'):
         try:
-            sql = "SELECT * FROM cases WHERE id = %s"
-            self.cursor.execute(sql, (case_id,))
+            sql = f"SELECT * FROM cases WHERE {criterion} = %s"
+        
+            self.cursor.execute(sql, (search_value,))
             return self.cursor.fetchone()
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             return None
 
-    def update_case(self, case_id, code, investigator_last_name, investigator_first_name, dni, reviewer, description, stage, deadline, status, urgency_level, review_file=None):
+    def get_cases_by_reviewer(self, reviewer):
         try:
-            sql = "UPDATE cases SET code = %s, investigator_last_name = %s, investigator_first_name = %s, dni = %s, reviewer = %s, description = %s, stage = %s, deadline = %s, status = %s, urgency_level = %s, review_file = %s WHERE id = %s"
-            self.cursor.execute(sql, (code, investigator_last_name, investigator_first_name, dni, reviewer, description, stage, deadline, status, urgency_level, review_file, case_id))
+            sql = "SELECT * FROM cases WHERE reviewer = %s"
+            self.cursor.execute(sql, (reviewer,))
+            return self.cursor.fetchall()
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return []
+
+    def get_cases_by_dni(self, dni):
+        try:
+            sql = "SELECT * FROM cases WHERE dni = %s"
+            self.cursor.execute(sql, (dni,))
+            return self.cursor.fetchall()
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return []
+
+    def update_case(self, case_id, code, investigator_last_name, investigator_first_name, dni, reviewer, stage):
+        try:
+            sql = "UPDATE cases SET code = %s, investigator_last_name = %s, investigator_first_name = %s, dni = %s, reviewer = %s, stage = %s WHERE id = %s"
+            self.cursor.execute(sql, (code, investigator_last_name, investigator_first_name, dni, reviewer, stage, case_id))
             self.db.commit()
         except mysql.connector.Error as err:
             print(f"Error: {err}")
@@ -118,24 +141,6 @@ class UserManagement:
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             self.db.rollback()
-
-    def create_case_stage(self, case_id, stage):
-        try:
-            sql = "INSERT INTO case_stages (case_id, stage) VALUES (%s, %s)"
-            self.cursor.execute(sql, (case_id, stage))
-            self.db.commit()
-        except mysql.connector.Error as err:
-            print(f"Error: {err}")
-            self.db.rollback()
-
-    def get_case_stages(self, case_id):
-        try:
-            sql = "SELECT * FROM case_stages WHERE case_id = %s"
-            self.cursor.execute(sql, (case_id,))
-            return self.cursor.fetchall()
-        except mysql.connector.Error as err:
-            print(f"Error: {err}")
-            return []
 
     def close_connection(self):
         if self.db:
