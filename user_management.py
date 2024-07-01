@@ -164,10 +164,10 @@ class UserManagement:
             print(f"Error: {err}")
             return []
 
-    def update_case(self, case_id, code, investigator_last_name, investigator_first_name, dni, reviewer, stage):
+    def update_case(self, case_id, code, investigated_last_name, investigated_first_name, dni, reviewer, stage):
         try:
-            sql = "UPDATE cases SET code = %s, investigator_last_name = %s, investigator_first_name = %s, dni = %s, reviewer = %s, stage = %s WHERE id = %s"
-            self.cursor.execute(sql, (code, investigator_last_name, investigator_first_name, dni, reviewer, stage, case_id))
+            sql = "UPDATE cases SET code = %s, investigated_last_name = %s, investigated_first_name = %s, dni = %s, reviewer = %s, stage = %s WHERE code = %s"
+            self.cursor.execute(sql, (code, investigated_last_name, investigated_first_name, dni, reviewer, stage, case_id))
             self.db.commit()
         except mysql.connector.Error as err:
             print(f"Error: {err}")
