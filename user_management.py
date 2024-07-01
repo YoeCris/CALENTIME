@@ -126,6 +126,15 @@ class UserManagement:
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             self.db.rollback()
+    
+    def get_all_cases(self):
+        try:
+            sql = "SELECT * FROM cases"
+            self.cursor.execute(sql)
+            return self.cursor.fetchall()
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return []
 
     def get_case(self, search_value, criterion='id'):
         try:
