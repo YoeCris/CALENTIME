@@ -1,5 +1,5 @@
 # admin_functions.py
-
+import mysql.connector
 import streamlit as st
 import pandas as pd
 from user_management import UserManagement

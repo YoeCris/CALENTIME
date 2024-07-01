@@ -2,6 +2,7 @@ import streamlit as st
 from user_management import UserManagement
 from user_functions import user_interface
 from admin_functions import admin_interface
+import mysql.connector
 
 # Inicializar la gestión de usuarios y casos
 user_management = UserManagement()
