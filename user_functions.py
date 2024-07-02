@@ -25,46 +25,88 @@ def login(username, password):
         return False
 
 def user_interface():
-    st.sidebar.subheader("Iniciar Sesión")
-    
-    with st.sidebar.form("login_form"):
-        username = st.text_input("Nombre de usuario")
-        password = st.text_input("Contraseña", type='password')
-        login_button = st.form_submit_button("Iniciar Sesión")
+    if not st.session_state.authenticated:
+        st.sidebar.subheader("Iniciar Sesión")
         
-        if login_button:
-            login(username, password)
+        with st.sidebar.form("login_form"):
+            username = st.text_input("Nombre de usuario")
+            password = st.text_input("Contraseña", type='password')
+            login_button = st.form_submit_button("Iniciar Sesión")
+            
+            if login_button:
+                login(username, password)
     
     if st.session_state.authenticated:
-        st.sidebar.subheader("Menú de Usuario")
-        choice = st.sidebar.radio("Seleccione una opción:", ["Ver Documentos", "Administrar Mi Usuario", "Cerrar Sesión"])
+        if st.session_state.role == 'administrador':
+            admin_interface()
+        else:
+            st.sidebar.subheader("Menú de Usuario")
+            choice = st.sidebar.radio("Seleccione una opción:", ["Ver Documentos", "Administrar Mi Usuario", "Cerrar Sesión"])
+            
+            if choice == "Cerrar Sesión":
+                st.session_state.authenticated = False
+                st.session_state.role = None
+                st.session_state.username = None
+                st.experimental_rerun()
+
+            elif choice == "Ver Documentos":
+                st.subheader("Ver Documentos")
+                casos = user_management.get_cases_by_reviewer(st.session_state.username)
         
-        if choice == "Cerrar Sesión":
-            st.session_state.authenticated = False
-            st.session_state.role = None
-            st.session_state.username = None
-            st.experimental_rerun()
+                if casos:
+                    df = pd.DataFrame(casos)
+                    df.columns = ['id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'stage']
+                    df = df.rename(columns={
+                        'id': 'ID',
+                        'code': 'Código del Documento',
+                        'investigated_last_name': 'Apellidos del Investigado',
+                        'investigated_first_name': 'Nombre del Investigado',
+                        'dni': 'DNI del Investigado',
+                        'reviewer': 'Encargado de Revisar el Documento',
+                        'stage': 'Etapa',
+                    })
+                    st.dataframe(df)
+                else:
+                    st.warning("No hay documentos disponibles para mostrar.")
 
-        elif choice == "Ver Documentos":
-            st.subheader("Ver Documentos")
-            casos = user_management.get_cases_by_reviewer(st.session_state.username)
+            elif choice == "Administrar Mi Usuario":
+                st.subheader("Administrar Mi Usuario")
+                # Aquí se puede agregar código adicional para que los usuarios administren su propia información, como cambiar la contraseña, etc.
+
+def admin_interface():
+    st.sidebar.subheader("Menú de Administración")
+    choice = st.sidebar.radio("Seleccione una opción:", ["Ver Documentos", "Administrar Documentos", "Administrar Usuarios", "Cerrar Sesión"])
+
+    if choice == "Cerrar Sesión":
+        st.session_state.authenticated = False
+        st.session_state.role = None
+        st.session_state.username = None
+        st.experimental_rerun()
+
+    elif choice == "Ver Documentos":
+        st.subheader("Ver Documentos")
+        casos = user_management.get_all_cases()
+
+        if casos:
+            df = pd.DataFrame(casos)
+            df.columns = ['id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'stage']
+            df = df.rename(columns={
+                'id': 'ID',
+                'code': 'Código del Documento',
+                'investigated_last_name': 'Apellidos del Investigado',
+                'investigated_first_name': 'Nombre del Investigado',
+                'dni': 'DNI del Investigado',
+                'reviewer': 'Encargado de Revisar el Documento',
+                'stage': 'Etapa',
+            })
+            st.dataframe(df)
+        else:
+            st.warning("No hay documentos disponibles para mostrar.")
     
-            if casos:
-                df = pd.DataFrame(casos)
-                df.columns = ['id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'stage']
-                df = df.rename(columns={
-                    'id': 'ID',
-                    'code': 'Código del Documento',
-                    'investigated_last_name': 'Apellidos del Investigado',
-                    'investigated_first_name': 'Nombre del Investigado',
-                    'dni': 'DNI del Investigado',
-                    'reviewer': 'Encargado de Revisar el Documento',
-                    'stage': 'Etapa',
-                })
-                st.dataframe(df)
-            else:
-                st.warning("No hay documentos disponibles para mostrar.")
+    elif choice == "Administrar Documentos":
+        st.subheader("Administrar Documentos")
+        # Aquí se puede agregar código adicional para la administración de documentos.
 
-        elif choice == "Administrar Mi Usuario":
-            st.subheader("Administrar Mi Usuario")
-            # Aquí se puede agregar código adicional para que los usuarios administren su propia información, como cambiar la contraseña, etc.
+    elif choice == "Administrar Usuarios":
+        st.subheader("Administrar Usuarios")
+        # Aquí se puede agregar código adicional para la administración de usuarios.

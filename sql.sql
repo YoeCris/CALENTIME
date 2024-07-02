@@ -22,11 +22,7 @@ CREATE TABLE cases (
     dni VARCHAR(8) NOT NULL,
     reviewer VARCHAR(50),
     stage ENUM('preparatoria', 'intermedia', 'juzgamiento') NOT NULL,
-    review_file VARCHAR(255),
     FOREIGN KEY (reviewer) REFERENCES users(username)
 );
-
-ALTER TABLE cases
-DROP COLUMN review_file;
 
 DESCRIBE cases;
