@@ -25,6 +25,11 @@ def login(username, password):
         return False
 
 def user_interface():
+    if 'authenticated' not in st.session_state:
+        st.session_state.authenticated = False
+        st.session_state.role = None
+        st.session_state.username = None
+
     if not st.session_state.authenticated:
         st.sidebar.subheader("Iniciar Sesión")
         
@@ -34,7 +39,8 @@ def user_interface():
             login_button = st.form_submit_button("Iniciar Sesión")
             
             if login_button:
-                login(username, password)
+                if login(username, password):
+                    st.experimental_rerun()
     
     if st.session_state.authenticated:
         if st.session_state.role == 'administrador':
