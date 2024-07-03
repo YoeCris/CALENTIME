@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from user_management import UserManagement
+from streamlit_option_menu import option_menu
 
 # Inicializar la gestión de usuarios y casos
 user_management = UserManagement()
@@ -11,20 +12,58 @@ st.markdown("""
     .main .block-container {
         padding: 1rem 1rem;
     }
+    .stSidebar .css-1aumxhk {
+        padding: 1rem 1rem;
+    }
     </style>
     """, unsafe_allow_html=True)
 
 def admin_interface():
-    st.sidebar.header("Menú de Administración")
-    choice = st.sidebar.radio("Seleccione una opción:", ["Ver Casos", "Administrar Casos", "Administrar Usuarios", "Cerrar Sesión"])
-    
-    if choice == "Cerrar Sesión":
-        st.session_state.authenticated = False
-        st.session_state.role = None
-        st.session_state.username = None
-        st.experimental_rerun()
+    with st.sidebar:
+        #st.header("Menú de Administración")
+        main_option = option_menu(
+            "MENÚ",
+            ["Ver Casos", "Administrar Casos", "Administrar Usuarios", "Cerrar Sesión"],
+            icons=["eye", "folder-plus", "user-cog", "sign-out-alt"],
+            menu_icon="cast",
+            default_index=0,
+        )
+        
+        if main_option == "Cerrar Sesión":
+            st.session_state.authenticated = False
+            st.session_state.role = None
+            st.session_state.username = None
+            st.experimental_rerun()
+        
+        if main_option == "Administrar Casos":
+            st.markdown("&nbsp;&nbsp;&nbsp;&nbsp;Administrar Casos")
+            sub_option = option_menu(
+                "",
+                ["Agregar Caso", "Modificar Caso"],
+                icons=["plus-circle", "edit"],
+                menu_icon="",
+                default_index=0,
+                orientation="vertical",
+                styles={
+                    "container": {"padding-left": "1.5rem"}
+                }
+            )
+        
+        elif main_option == "Administrar Usuarios":
+            st.markdown("&nbsp;&nbsp;&nbsp;&nbsp;Administrar Usuarios")
+            sub_option = option_menu(
+                "",
+                ["Agregar Usuario", "Modificar Usuario"],
+                icons=["user-plus", "user-edit"],
+                menu_icon="",
+                default_index=0,
+                orientation="vertical",
+                styles={
+                    "container": {"padding-left": "1.5rem"}
+                }
+            )
 
-    elif choice == "Ver Casos":
+    if main_option == "Ver Casos":
         st.subheader("Ver Casos")
         casos = user_management.get_all_cases()
     
@@ -53,15 +92,9 @@ def admin_interface():
         else:
             st.warning("No hay casos disponibles para mostrar.")
 
-    elif choice == "Administrar Casos":
-        st.subheader("Administrar Casos")
-
-        case_actions_options = ["Agregar Caso", "Modificar Caso"]
-        case_action = st.sidebar.radio("Seleccione una acción:", case_actions_options)
-
-        if case_action == "Agregar Caso":
+    elif main_option == "Administrar Casos":
+        if sub_option == "Agregar Caso":
             st.subheader("Agregar Nuevo Caso")
-    
             with st.form("add_case_form"):
                 code = st.text_input("Código del Caso")
                 investigated_last_name = st.text_input("Apellidos del Investigado")
@@ -85,7 +118,7 @@ def admin_interface():
                         st.success(f"Caso {code} agregado exitosamente")
                         st.experimental_rerun()
 
-        elif case_action == "Modificar Caso":
+        elif sub_option == "Modificar Caso":
             st.subheader("Editar o Eliminar Caso")
 
             casos = user_management.get_all_cases()
@@ -151,13 +184,8 @@ def admin_interface():
                         st.session_state.pop('edit_case')
                         st.experimental_rerun()
 
-    elif choice == "Administrar Usuarios":
-        st.subheader("Administrar Usuarios")
-
-        user_actions_options = ["Agregar Usuario", "Modificar Usuario"]
-        user_action = st.sidebar.radio("Seleccione una acción:", user_actions_options)
-
-        if user_action == "Agregar Usuario":
+    elif main_option == "Administrar Usuarios":
+        if sub_option == "Agregar Usuario":
             st.subheader("Agregar Nuevo Usuario")
             with st.form("add_user_form"):
                 first_name = st.text_input("Nombres")
@@ -177,9 +205,11 @@ def admin_interface():
                             st.success(f"Usuario {username} agregado exitosamente")
                             st.experimental_rerun()
                         else:
-                            st.warning("Por favor, ingrese un DNI válido de 8 dígitos.")
+                            st.warning("La contraseña debe contener exactamente 6 caracteres, incluyendo letras y números.")
+                    else:
+                        st.warning("Por favor, ingrese un DNI válido de 8 dígitos.")
 
-        elif user_action == "Modificar Usuario":
+        elif sub_option == "Modificar Usuario":
             st.subheader("Editar o Eliminar Usuario")
 
             usuarios = user_management.get_users()
@@ -243,6 +273,3 @@ def admin_interface():
                         st.success("Usuario actualizado correctamente")
                         del st.session_state.edit_user
                         st.experimental_rerun()
-
-# Llama a la función de interfaz de administrador
-admin_interface()
