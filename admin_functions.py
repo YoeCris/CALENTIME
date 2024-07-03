@@ -15,7 +15,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 def admin_interface():
-    st.sidebar.subheader("Menú de Administración")
+    st.sidebar.header("Menú de Administración")
     choice = st.sidebar.radio("Seleccione una opción:", ["Ver Casos", "Administrar Casos", "Administrar Usuarios", "Cerrar Sesión"])
     
     if choice == "Cerrar Sesión":
@@ -170,11 +170,14 @@ def admin_interface():
 
                 if add_user_button:
                     if len(dni) == 8 and dni.isdigit():
-                        user_management.create_user(username, password, role, first_name, last_name, dni)
-                        st.success(f"Usuario {username} agregado exitosamente")
-                        st.experimental_rerun()
-                    else:
-                        st.warning("Por favor, ingrese un DNI válido de 8 dígitos.")
+                        import re
+                        password_pattern = re.compile(r'^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{6}$')
+                        if password_pattern.match(password):
+                            user_management.create_user(username, password, role, first_name, last_name, dni)
+                            st.success(f"Usuario {username} agregado exitosamente")
+                            st.experimental_rerun()
+                        else:
+                            st.warning("Por favor, ingrese un DNI válido de 8 dígitos.")
 
         elif user_action == "Modificar Usuario":
             st.subheader("Editar o Eliminar Usuario")

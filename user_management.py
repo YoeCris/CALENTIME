@@ -108,6 +108,24 @@ class UserManagement:
             print(f"Error: {err}")
             return None
 
+    def get_user_by_username(self, username):
+        try:
+            sql = "SELECT * FROM users WHERE username = %s"
+            self.cursor.execute(sql, (username,))
+            return self.cursor.fetchone()
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return None
+        
+    def get_cases_by_reviewer(self, reviewer):
+        try:
+            sql = "SELECT * FROM cases WHERE reviewer = %s"
+            self.cursor.execute(sql, (reviewer,))
+            return self.cursor.fetchall()
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return None
+        
     def update_case(self, case_id, code, investigated_last_name, investigated_first_name, dni, reviewer, stage):
         try:
             sql = "UPDATE cases SET code = %s, investigated_last_name = %s, investigated_first_name = %s, dni = %s, reviewer = %s, stage = %s WHERE case_id = %s"
