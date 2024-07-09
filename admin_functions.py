@@ -216,9 +216,9 @@ def admin_interface():
                         import re
                         password_pattern = re.compile(r'^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{6}$')
                         if password_pattern.match(password):
-                            user_management.create_user(username, password, role, first_name, last_name, dni)
+                            user_management.create_user(username, password, role, first_name, last_name, number_phone, dni)
                             st.success(f"Usuario {username} agregado exitosamente")
-                            st.experimental_rerun()
+                            #st.experimental_rerun()
                         else:
                             st.warning("La contraseña debe contener exactamente 6 caracteres, incluyendo letras y números.")
                     else:
