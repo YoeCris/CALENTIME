@@ -26,8 +26,12 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-def check_document_status(doc_id):
-    return f"Estado del documento {doc_id}: Pendiente"
+def check_document_status(case_code):
+    case = user_management.get_case_by_code(case_code)
+    if case:
+        return f"Estado del documento {case_code}: {case['stage']}"
+    else:
+        st.warning("El caso no existe")
 
 def login(username, password):
     user = user_management.get_user_by_username(username)

@@ -105,6 +105,15 @@ class UserManagement:
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             return None
+
+    def get_case_by_code(self, code):
+        try:
+            sql = "SELECT * FROM cases WHERE code = %s"
+            self.cursor.execute(sql, (code,))
+            return self.cursor.fetchone()
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return None
     
     def get_user_by_username(self, username):
         try:

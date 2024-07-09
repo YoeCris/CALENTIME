@@ -22,15 +22,18 @@ st.title("Sistema de Gestión de Casos")
 if not st.session_state.authenticated:
     st.subheader("Consultar Estado del Caso")
     with st.form("check_status_form"):
-        doc_id = st.text_input("ID del Caso")
+        case_code = st.text_input("Código del Caso")
         check_button = st.form_submit_button("Consultar Estado")
         
         if check_button:
-            if doc_id:
-                status = check_document_status(doc_id)
-                st.info(status)
+            if case_code:
+                status = check_document_status(case_code)
+                if status:
+                    st.info(status)
+                else:
+                    st.empty()
             else:
-                st.warning("Por favor, ingrese un ID del Caso")
+                st.warning("Por favor, ingrese un Código del Caso")
 
     user_interface()
 else:
