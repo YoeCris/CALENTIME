@@ -1,3 +1,4 @@
+# user_management.py
 import mysql.connector
 
 class UserManagement:
@@ -11,15 +12,13 @@ class UserManagement:
         self.cursor = self.db.cursor(dictionary=True)
         self.users = self.get_users()
 
-
-#consultas para la tabla users
-
+    # Consultas para la tabla users
     def create_default_superusers(self):
         try:
             self.cursor.execute("SELECT * FROM users WHERE username = 'admin'")
             result = self.cursor.fetchone()
             if not result:
-                self.create_user('admin', 'admin', 'administrador', 'Admin', 'User', '946641546','73744399')
+                self.create_user('admin', 'admin', 'administrador', 'Admin', 'User', '946641546', '73744399')
         except mysql.connector.Error as err:
             print(f"Error: {err}")
 
@@ -42,7 +41,7 @@ class UserManagement:
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             self.db.rollback()
-        
+
     def get_users(self):
         try:
             self.cursor.execute("SELECT * FROM users")
@@ -80,8 +79,7 @@ class UserManagement:
             print(f"Error: {err}")
             self.db.rollback()
 
-#consultas para la tabla cases:
-
+    # Consultas para la tabla cases
     def create_case(self, code, investigated_last_name, investigated_first_name, dni, reviewer, created_date, deadline, stage):
         try:
             sql = "INSERT INTO cases (code, investigated_last_name, investigated_first_name, dni, reviewer, created_date, deadline, stage) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
@@ -90,7 +88,7 @@ class UserManagement:
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             self.db.rollback()
-    
+
     def get_all_cases(self):
         try:
             self.cursor.execute("SELECT * FROM cases")
@@ -107,7 +105,7 @@ class UserManagement:
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             return None
-
+    
     def get_user_by_username(self, username):
         try:
             sql = "SELECT * FROM users WHERE username = %s"
@@ -116,7 +114,7 @@ class UserManagement:
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             return None
-        
+
     def get_cases_by_reviewer(self, reviewer):
         try:
             sql = "SELECT * FROM cases WHERE reviewer = %s"
@@ -125,10 +123,10 @@ class UserManagement:
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             return None
-        
+
     def update_case(self, case_id, code, investigated_last_name, investigated_first_name, dni, reviewer, created_date, deadline, stage):
         try:
-            sql = "UPDATE cases SET code = %s, investigated_last_name = %s, investigated_first_name = %s, dni = %s, reviewer = %s, creatred_date = %s, deadline = %s, stage = %s WHERE case_id = %s"
+            sql = "UPDATE cases SET code = %s, investigated_last_name = %s, investigated_first_name = %s, dni = %s, reviewer = %s, created_date = %s, deadline = %s, stage = %s WHERE case_id = %s"
             values = (code, investigated_last_name, investigated_first_name, dni, reviewer, created_date, deadline, stage, case_id)
             self.cursor.execute(sql, values)
             self.db.commit()

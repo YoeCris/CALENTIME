@@ -82,7 +82,7 @@ def user_interface():
         
             if casos:
                 df = pd.DataFrame(casos)
-                df.columns = ['id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'stage']
+                df.columns = ['id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'created_date', 'deadline', 'stage']
                 df = df.rename(columns={
                     'id': 'ID',
                     'code': 'Código del Documento',
@@ -90,18 +90,22 @@ def user_interface():
                     'investigated_first_name': 'Nombre del Investigado',
                     'dni': 'DNI del Investigado',
                     'reviewer': 'Encargado de Revisar el Documento',
+                    'created_date': 'Fecha Creada',
+                    'deadline': 'Tiempo',
                     'stage': 'Etapa',
                 })
 
                 for i, row in df.iterrows():
-                    cols = st.columns((3, 10, 15, 15, 8, 10, 11))
+                    cols = st.columns((3, 9, 12, 12, 11, 12, 15, 10, 15))
                     cols[0].write(row['ID'])
                     cols[1].write(row['Código del Documento'])
                     cols[2].write(row['Apellidos del Investigado'])
                     cols[3].write(row['Nombre del Investigado'])
                     cols[4].write(row['DNI del Investigado'])
                     cols[5].write(row['Encargado de Revisar el Documento'])
-                    cols[6].write(row['Etapa'])
+                    cols[6].write(row['Fecha Creada'])
+                    cols[7].write(row['Tiempo'])
+                    cols[8].write(row['Etapa'])
             else:
                 st.warning("No hay documentos disponibles para mostrar.")
 
@@ -122,6 +126,7 @@ def user_interface():
                     first_name = st.text_input("Nombres", value=user_data['first_name'], disabled=True)
                     last_name = st.text_input("Apellidos", value=user_data['last_name'], disabled=True)
                     dni = st.text_input("DNI", value=user_data['dni'], disabled=True)
+                    number_phone = st.text_input("Número de Celular", value=user_data['number_phone'], disabled=False)
                     update_button = st.form_submit_button("Guardar Cambios")
 
                     if update_button:
@@ -130,9 +135,10 @@ def user_interface():
                             username=user_data['username'],
                             password=user_data['password'],
                             role=user_data['role'],
-                            first_name=first_name,
-                            last_name=last_name,
-                            dni=dni
+                            first_name=user_data['first_name'],
+                            last_name=user_data['last_name'],
+                            dni=user_data['dni'],
+                            number_phone=number_phone
                         )
                         st.success("Datos personales actualizados correctamente")
                         st.experimental_rerun()
@@ -150,10 +156,9 @@ def user_interface():
                             user = user_management.get_user_by_username(st.session_state.username)
                             if user and user['password'] == current_password:
                                 user_management.update_user_password(st.session_state.username, new_password)
-                                st.success("Se actualizo correctamente su contraseña")
-                                #st.experimental_rerun()
+                                st.success("Se actualizó correctamente su contraseña")
+                                st.experimental_rerun()
                             else:
                                 st.warning("Contraseña actual incorrecta")
                         else:
                             st.warning("Las contraseñas nuevas no coinciden")
-

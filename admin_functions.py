@@ -83,17 +83,16 @@ def admin_interface():
             })
 
             for i, row in df.iterrows():
-                cols = st.columns((3, 10, 15, 15, 8, 10, 13, 10, 10))
+                cols = st.columns((3, 9, 12, 12, 11, 12, 15, 10, 15))
                 cols[0].write(row['ID'])
                 cols[1].write(row['Código del Caso'])
                 cols[2].write(row['Apellidos del Investigado'])
                 cols[3].write(row['Nombre del Investigado'])
                 cols[4].write(row['DNI del Investigado'])
                 cols[5].write(row['Encargado de Revisar el Caso'])
-                cols[6].write(row['Etapa'])
-                cols[7].write(row['Fecha de Creación'])
-                cols[8].write(row['Fecha de Entrega'])
-                show_progress_bar(row)
+                cols[6].write(row['Fecha de Creación'])
+                cols[7].write(row['Fecha de Entrega'])
+                cols[8].write(row['Etapa'])
         else:
             st.warning("No hay casos disponibles para mostrar.")
 
