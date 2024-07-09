@@ -69,7 +69,7 @@ def admin_interface():
     
         if casos:
             df = pd.DataFrame(casos)
-            df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'stage', 'created_date', 'deadline', 'status']
+            df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'created_date', 'deadline', 'stage']
             df = df.rename(columns={
                 'case_id': 'ID',
                 'code': 'Código del Caso',
@@ -77,10 +77,9 @@ def admin_interface():
                 'investigated_first_name': 'Nombre del Investigado',
                 'dni': 'DNI del Investigado',
                 'reviewer': 'Encargado de Revisar el Caso',
-                'stage': 'Etapa',
                 'created_date': 'Fecha de Creación',
                 'deadline': 'Fecha de Entrega',
-                'status': 'Estado',
+                'stage': 'Etapa',
             })
 
             for i, row in df.iterrows():
@@ -122,9 +121,9 @@ def admin_interface():
         
                 if add_case_button:
                     if dni:
-                        user_management.create_case(code, investigated_last_name, investigated_first_name, dni, reviewer, stage, created_date, deadline, status="No Revisado")
+                        user_management.create_case(code, investigated_last_name, investigated_first_name, dni, reviewer, created_date, deadline, stage)
                         st.success(f"Caso {code} agregado exitosamente")
-                        st.experimental_rerun()
+                        #st.experimental_rerun()
 
         elif sub_option == "Modificar Caso":
             st.subheader("Editar o Eliminar Caso")
@@ -132,7 +131,7 @@ def admin_interface():
             casos = user_management.get_all_cases()
             if casos:
                 df = pd.DataFrame(casos)
-                df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'stage', 'created_date', 'deadline']
+                df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'created_date', 'deadline',  'stage']
                 df = df.rename(columns={
                     'case_id': 'ID',
                     'code': 'Código',
@@ -140,9 +139,9 @@ def admin_interface():
                     'investigated_first_name': 'Nombres',
                     'dni': 'DNI',
                     'reviewer': 'Encargado',
-                    'stage': 'Etapa',
                     'created_date': 'Fecha de Creación',
                     'deadline': 'Fecha de Entrega',
+                    'stage': 'Etapa',
                 })
 
                 for i, row in df.iterrows():
@@ -193,7 +192,7 @@ def admin_interface():
                     edit_case_button = st.form_submit_button("Actualizar Caso")
 
                     if edit_case_button and dni:
-                        user_management.update_case(case['case_id'], code, investigated_last_name, investigated_first_name, dni, reviewer, stage, created_date, deadline, case.get('status'))
+                        user_management.update_case(case['case_id'], code, investigated_last_name, investigated_first_name, dni, reviewer, created_date, deadline, stage)
                         st.success(f"Caso {code} actualizado exitosamente")
                         st.session_state.pop('edit_case')
                         st.experimental_rerun()
@@ -207,7 +206,7 @@ def admin_interface():
                 dni = st.text_input("DNI", max_chars=8)
                 number_phone = st.text_input("Celular", max_chars=9)
                 username = st.text_input("Nombre de Usuario")
-                password = st.text_input("Contraseña", max_chars=6, type='password')
+                password = st.text_input("Contraseña", type='password')
                 role = st.selectbox("Rol", ["administrador", "usuario"])
                 add_user_button = st.form_submit_button("Agregar Usuario")
 
@@ -272,8 +271,8 @@ def admin_interface():
                 with st.form("edit_user_form"):
                     new_first_name = st.text_input("Nuevo Nombre", value=user['first_name'])
                     new_last_name = st.text_input("Nuevo Apellido", value=user['last_name'])
-                    new_dni = st.text_input("Nuevo DNI", value=user['dni'])
-                    new_number_phone = st.text_input("Nuevo Celular", value=user['number_phone'])
+                    new_dni = st.text_input("Nuevo DNI", value=user['dni'], max_chars=8)
+                    new_number_phone = st.text_input("Nuevo Celular", value=user['number_phone'], max_chars=9)
                     new_role = st.selectbox("Nuevo Rol", ["administrador", "usuario"], index=["administrador", "usuario"].index(user['role']))
                     new_password = st.text_input("Nueva Contraseña", type='password')
                     submit_button = st.form_submit_button("Actualizar Usuario")
@@ -290,7 +289,7 @@ def admin_interface():
                             dni=new_dni
                         )
                         st.success("Usuario actualizado correctamente")
-                        del st.session_state.edit_user
+                        #del st.session_state.edit_user
                         #st.experimental_rerun()
 
 def show_progress_bar(case):

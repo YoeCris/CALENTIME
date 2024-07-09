@@ -60,10 +60,10 @@ class UserManagement:
             print(f"Error: {err}")
             return None
 
-    def update_user(self, user_id, username, password, role, first_name, last_name, phone_number, dni):
+    def update_user(self, user_id, username, password, role, first_name, last_name, number_phone, dni):
         try:
-            sql = "UPDATE users SET username = %s, password = %s, role = %s, first_name = %s, last_name = %s, phone_number = %s, dni = %s WHERE user_id = %s"
-            self.cursor.execute(sql, (username, password, role, first_name, last_name, phone_number, dni, user_id))
+            sql = "UPDATE users SET username = %s, password = %s, role = %s, first_name = %s, last_name = %s, number_phone = %s, dni = %s WHERE user_id = %s"
+            self.cursor.execute(sql, (username, password, role, first_name, last_name, number_phone, dni, user_id))
             self.db.commit()
             self.users = self.get_users()
         except mysql.connector.Error as err:
