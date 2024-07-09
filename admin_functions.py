@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from user_management import UserManagement
 from streamlit_option_menu import option_menu
+import datetime
 
 # Inicializar la gestión de usuarios y casos
 user_management = UserManagement()
@@ -20,11 +21,10 @@ st.markdown("""
 
 def admin_interface():
     with st.sidebar:
-        #st.header("Menú de Administración")
         main_option = option_menu(
             "MENÚ",
-            ["Ver Casos", "Administrar Casos", "Administrar Usuarios", "Cerrar Sesión"],
-            icons=["eye", "folder-plus", "user-cog", "sign-out-alt"],
+            ["Visualización", "Administrar Casos", "Administrar Usuarios", "Cerrar Sesión"],
+            icons=["eye", "folder", "person", "box-arrow-in-left"],
             menu_icon="cast",
             default_index=0,
         )
@@ -40,7 +40,7 @@ def admin_interface():
             sub_option = option_menu(
                 "",
                 ["Agregar Caso", "Modificar Caso"],
-                icons=["plus-circle", "edit"],
+                icons=["folder-plus", "pencil"],
                 menu_icon="",
                 default_index=0,
                 orientation="vertical",
@@ -54,7 +54,7 @@ def admin_interface():
             sub_option = option_menu(
                 "",
                 ["Agregar Usuario", "Modificar Usuario"],
-                icons=["user-plus", "user-edit"],
+                icons=["person-plus", "pencil"],
                 menu_icon="",
                 default_index=0,
                 orientation="vertical",
@@ -63,13 +63,13 @@ def admin_interface():
                 }
             )
 
-    if main_option == "Ver Casos":
-        st.subheader("Ver Casos")
+    if main_option == "Visualización":
+        st.subheader("Visualización de Casos")
         casos = user_management.get_all_cases()
     
         if casos:
             df = pd.DataFrame(casos)
-            df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'stage']
+            df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'stage', 'created_date', 'deadline', 'status']
             df = df.rename(columns={
                 'case_id': 'ID',
                 'code': 'Código del Caso',
@@ -78,10 +78,13 @@ def admin_interface():
                 'dni': 'DNI del Investigado',
                 'reviewer': 'Encargado de Revisar el Caso',
                 'stage': 'Etapa',
+                'created_date': 'Fecha de Creación',
+                'deadline': 'Fecha de Entrega',
+                'status': 'Estado',
             })
 
             for i, row in df.iterrows():
-                cols = st.columns((3, 10, 15, 15, 8, 10, 11))
+                cols = st.columns((3, 10, 15, 15, 8, 10, 13, 10, 10))
                 cols[0].write(row['ID'])
                 cols[1].write(row['Código del Caso'])
                 cols[2].write(row['Apellidos del Investigado'])
@@ -89,6 +92,9 @@ def admin_interface():
                 cols[4].write(row['DNI del Investigado'])
                 cols[5].write(row['Encargado de Revisar el Caso'])
                 cols[6].write(row['Etapa'])
+                cols[7].write(row['Fecha de Creación'])
+                cols[8].write(row['Fecha de Entrega'])
+                show_progress_bar(row)
         else:
             st.warning("No hay casos disponibles para mostrar.")
 
@@ -100,10 +106,12 @@ def admin_interface():
                 investigated_last_name = st.text_input("Apellidos del Investigado")
                 investigated_first_name = st.text_input("Nombre del Investigado")
                 dni = st.text_input("DNI del Investigado", max_chars=8)
-        
+                created_date = st.date_input("Fecha de Creación", value=datetime.date.today())
+                deadline = st.number_input("Tiempo Máximo de Entrega (días)", min_value=1, value=30)#st.date_input("Fecha de Entrega", value=datetime.date.today())
+
                 if len(dni) != 8 or not dni.isdigit():
                     dni = ""
-        
+
                 users = user_management.get_users()
                 normal_users = [user['username'] for user in users if user['role'] == 'usuario']
                 reviewer = st.selectbox("Encargado de Revisar el Caso", normal_users)
@@ -114,7 +122,7 @@ def admin_interface():
         
                 if add_case_button:
                     if dni:
-                        user_management.create_case(code, investigated_last_name, investigated_first_name, dni, reviewer, stage)
+                        user_management.create_case(code, investigated_last_name, investigated_first_name, dni, reviewer, stage, created_date, deadline, status="No Revisado")
                         st.success(f"Caso {code} agregado exitosamente")
                         st.experimental_rerun()
 
@@ -124,7 +132,7 @@ def admin_interface():
             casos = user_management.get_all_cases()
             if casos:
                 df = pd.DataFrame(casos)
-                df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'stage']
+                df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'stage', 'created_date', 'deadline']
                 df = df.rename(columns={
                     'case_id': 'ID',
                     'code': 'Código',
@@ -133,10 +141,12 @@ def admin_interface():
                     'dni': 'DNI',
                     'reviewer': 'Encargado',
                     'stage': 'Etapa',
+                    'created_date': 'Fecha de Creación',
+                    'deadline': 'Fecha de Entrega',
                 })
 
                 for i, row in df.iterrows():
-                    cols = st.columns((3, 10, 15, 15, 8, 10, 11, 5, 5))
+                    cols = st.columns((3, 10, 15, 15, 8, 10, 13, 10, 10, 4, 4))
                     cols[0].write(row['ID'])
                     cols[1].write(row['Código'])
                     cols[2].write(row['Apellidos'])
@@ -144,8 +154,10 @@ def admin_interface():
                     cols[4].write(row['DNI'])
                     cols[5].write(row['Encargado'])
                     cols[6].write(row['Etapa'])
-                    edit_button = cols[7].button("✏️", key=f"edit_{row['ID']}")
-                    delete_button = cols[8].button("🗑️", key=f"delete_{row['ID']}")
+                    cols[7].write(row['Fecha de Creación'])
+                    cols[8].write(row['Fecha de Entrega'])
+                    edit_button = cols[9].button("✏️", key=f"edit_{row['ID']}")
+                    delete_button = cols[10].button("🗑️", key=f"delete_{row['ID']}")
                     
                     if edit_button:
                         st.session_state.edit_case = user_management.get_case(row['ID'])
@@ -166,6 +178,8 @@ def admin_interface():
                     investigated_last_name = st.text_input("Apellidos del Investigado", value=case.get('investigated_last_name', ''))
                     investigated_first_name = st.text_input("Nombre del Investigado", value=case.get('investigated_first_name', ''))
                     dni = st.text_input("DNI del Investigado", value=case.get('dni', ''), max_chars=8)
+                    created_date = st.date_input("Fecha de Creación", value=pd.to_datetime(case.get('created_date')))
+                    deadline = st.number_input("Tiempo Máximo de Entrega (días)", value=case.get('deadline', 30))
             
                     if len(dni) != 8 or not dni.isdigit():
                         st.warning("DNI inválido")
@@ -179,7 +193,7 @@ def admin_interface():
                     edit_case_button = st.form_submit_button("Actualizar Caso")
 
                     if edit_case_button and dni:
-                        user_management.update_case(case['case_id'], code, investigated_last_name, investigated_first_name, dni, reviewer, stage)
+                        user_management.update_case(case['case_id'], code, investigated_last_name, investigated_first_name, dni, reviewer, stage, created_date, deadline, case.get('status'))
                         st.success(f"Caso {code} actualizado exitosamente")
                         st.session_state.pop('edit_case')
                         st.experimental_rerun()
@@ -191,8 +205,9 @@ def admin_interface():
                 first_name = st.text_input("Nombres")
                 last_name = st.text_input("Apellidos")
                 dni = st.text_input("DNI", max_chars=8)
+                number_phone = st.text_input("Celular", max_chars=9)
                 username = st.text_input("Nombre de Usuario")
-                password = st.text_input("Contraseña", type='password')
+                password = st.text_input("Contraseña", max_chars=6, type='password')
                 role = st.selectbox("Rol", ["administrador", "usuario"])
                 add_user_button = st.form_submit_button("Agregar Usuario")
 
@@ -215,28 +230,30 @@ def admin_interface():
             usuarios = user_management.get_users()
             if usuarios:
                 df = pd.DataFrame(usuarios)
-                df.columns = ['user_id', 'username', 'password', 'role', 'first_name', 'last_name', 'dni']
-                df = df.rename(columns={
+                df.columns = ['user_id', 'username', 'password', 'role', 'first_name', 'last_name', 'number_phone','dni']
+                df = df.rename(columns={ 
                     'user_id': 'ID',
                     'username': 'Nombre de Usuario',
                     'password': 'Contraseña',
                     'role': 'Rol',
                     'first_name': 'Nombres',
                     'last_name': 'Apellidos',
+                    'number_phone': 'Celular',
                     'dni': 'DNI',
                 })
 
                 for i, row in df.iterrows():
-                    cols = st.columns((3, 10, 10, 13, 20, 20, 8, 6, 7))
+                    cols = st.columns((3, 10, 7, 13, 15, 15, 9, 8, 5, 5))
                     cols[0].write(row['ID'])
                     cols[1].write(row['Nombre de Usuario'])
                     cols[2].write(row['Contraseña'])
                     cols[3].write(row['Rol'])
                     cols[4].write(row['Nombres'])
                     cols[5].write(row['Apellidos'])
-                    cols[6].write(row['DNI'])
-                    edit_button = cols[7].button("✏️", key=f"edit_{row['Nombre de Usuario']}")
-                    delete_button = cols[8].button("🗑️", key=f"delete_{row['Nombre de Usuario']}")
+                    cols[6].write(row['Celular'])
+                    cols[7].write(row['DNI'])
+                    edit_button = cols[8].button("✏️", key=f"edit_{row['Nombre de Usuario']}")
+                    delete_button = cols[9].button("🗑️", key=f"delete_{row['Nombre de Usuario']}")
                     
                     if edit_button:
                         st.session_state.edit_user = user_management.get_user_by_username(row['Nombre de Usuario'])
@@ -256,6 +273,7 @@ def admin_interface():
                     new_first_name = st.text_input("Nuevo Nombre", value=user['first_name'])
                     new_last_name = st.text_input("Nuevo Apellido", value=user['last_name'])
                     new_dni = st.text_input("Nuevo DNI", value=user['dni'])
+                    new_number_phone = st.text_input("Nuevo Celular", value=user['number_phone'])
                     new_role = st.selectbox("Nuevo Rol", ["administrador", "usuario"], index=["administrador", "usuario"].index(user['role']))
                     new_password = st.text_input("Nueva Contraseña", type='password')
                     submit_button = st.form_submit_button("Actualizar Usuario")
@@ -268,8 +286,35 @@ def admin_interface():
                             role=new_role,
                             first_name=new_first_name,
                             last_name=new_last_name,
+                            number_phone=new_number_phone,
                             dni=new_dni
                         )
                         st.success("Usuario actualizado correctamente")
                         del st.session_state.edit_user
-                        st.experimental_rerun()
+                        #st.experimental_rerun()
+
+def show_progress_bar(case):
+    created_date = pd.to_datetime(case['created_date'])
+    deadline = case['deadline']
+    status = case['status']
+    current_date = pd.to_datetime('today')
+    days_elapsed = (current_date - created_date).days
+    progress = min(100, max(0, (days_elapsed / deadline) * 100))
+
+    bar_color = 'red'
+    if progress <= 50:
+        bar_color = 'green'
+    elif 50 < progress <= 75:
+        bar_color = 'orange'
+
+    st.progress(progress / 100, text=f"{status} ({days_elapsed} días / {deadline} días)", color=bar_color)
+
+    if status == "No Revisado":
+        if st.button(f"Iniciar Revisión - {case['code']}", key=f"start_{case['case_id']}"):
+            user_management.update_case_status(case['case_id'], "En Revisión")
+            st.experimental_rerun()
+    elif status == "En Revisión":
+        if st.button(f"Entregar Caso - {case['code']}", key=f"finish_{case['case_id']}"):
+            user_management.update_case_status(case['case_id'], "Revisado")
+            # Aquí podrías generar un PDF con los detalles del caso
+            st.experimental_rerun()
