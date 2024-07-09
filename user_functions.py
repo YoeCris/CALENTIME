@@ -35,6 +35,7 @@ def login(username, password):
         st.session_state.authenticated = True
         st.session_state.role = user['role']
         st.session_state.username = username
+        st.session_state.user_id = user['user_id']
         st.session_state.password_attempts = 3
         return True
     else:
@@ -64,7 +65,7 @@ def user_interface():
             main_option = option_menu(
                 "MENÚ",
                 ["Ver Documentos", "Administrar Mi Usuario", "Cerrar Sesión"],
-                icons=["eye", "user-cog", "sign-out-alt"],
+                icons=["eye", "person", "box-arrow-in-left"],
                 menu_icon="cast",
                 default_index=0,
             )
@@ -74,9 +75,6 @@ def user_interface():
                 st.session_state.role = None
                 st.session_state.username = None
                 st.experimental_rerun()
-            
-            if main_option == "Ver Documentos":
-                st.markdown("&nbsp;&nbsp;&nbsp;&nbsp;Ver Documentos")
             
         if main_option == "Ver Documentos":
             st.subheader("Ver Documentos")
@@ -108,5 +106,54 @@ def user_interface():
                 st.warning("No hay documentos disponibles para mostrar.")
 
         elif main_option == "Administrar Mi Usuario":
-            st.subheader("Administrar Mi Usuario")
-            # Aquí se puede agregar código adicional para que los usuarios administren su propia información, como cambiar la contraseña, etc.
+            sub_option = option_menu(
+                "Administrar Mi Usuario",
+                ["Datos Personales", "Cambiar Contraseña"],
+                icons=["person", "key"],
+                menu_icon="cast",
+                default_index=0,
+                orientation="horizontal",
+            )
+
+            if sub_option == "Datos Personales":
+                user_data = user_management.get_user_by_username(st.session_state.username)
+                st.subheader("Datos Personales")
+                with st.form("personal_data_form"):
+                    first_name = st.text_input("Nombres", value=user_data['first_name'], disabled=True)
+                    last_name = st.text_input("Apellidos", value=user_data['last_name'], disabled=True)
+                    dni = st.text_input("DNI", value=user_data['dni'], disabled=True)
+                    update_button = st.form_submit_button("Guardar Cambios")
+
+                    if update_button:
+                        user_management.update_user(
+                            user_id=user_data['user_id'],
+                            username=user_data['username'],
+                            password=user_data['password'],
+                            role=user_data['role'],
+                            first_name=first_name,
+                            last_name=last_name,
+                            dni=dni
+                        )
+                        st.success("Datos personales actualizados correctamente")
+                        st.experimental_rerun()
+
+            elif sub_option == "Cambiar Contraseña":
+                st.subheader("Cambiar Contraseña")
+                with st.form("change_password_form"):
+                    current_password = st.text_input("Contraseña Actual", type='password')
+                    new_password = st.text_input("Nueva Contraseña", type='password')
+                    confirm_password = st.text_input("Repetir Contraseña", type='password')
+                    change_password_button = st.form_submit_button("Guardar Cambios")
+
+                    if change_password_button:
+                        if new_password == confirm_password:
+                            user = user_management.get_user_by_username(st.session_state.username)
+                            if user and user['password'] == current_password:
+                                user_management.update_user_password(st.session_state.username, new_password)
+                                st.success("Se actualizo correctamente su contraseña")
+                                #st.experimental_rerun()
+                            else:
+                                st.warning("Contraseña actual incorrecta")
+                        else:
+                            st.warning("Las contraseñas nuevas no coinciden")
+
