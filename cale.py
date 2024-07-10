@@ -3,6 +3,7 @@ import streamlit as st
 from user_management import UserManagement
 from user_functions import user_interface, check_document_status, login
 from admin_functions import admin_interface
+import consulta_documentos
 
 # Inicializar la gestión de usuarios y casos
 user_management = UserManagement()
@@ -20,22 +21,11 @@ if 'authenticated' not in st.session_state:
 
 # Página de inicio de sesión y consulta de documentos
 if not st.session_state.authenticated:
-    st.subheader("Consultar Estado del Caso")
-    with st.form("check_status_form"):
-        case_code = st.text_input("Código del Caso")
-        check_button = st.form_submit_button("Consultar Estado")
-        
-        if check_button:
-            if case_code:
-                status = check_document_status(case_code)
-                if status:
-                    st.info(status)
-                else:
-                    st.empty()
-            else:
-                st.warning("Por favor, ingrese un Código del Caso")
-
-    user_interface()
+    if 'show_case_info' in st.session_state and st.session_state.show_case_info:
+        consulta_documentos.mostrar_informacion_del_documento(st.session_state.case_info)
+    else:
+        consulta_documentos.consulta_documentos()
+        user_interface()
 else:
     if st.session_state.role == 'administrador':
         admin_interface()
