@@ -16,7 +16,7 @@ if 'authenticated' not in st.session_state:
     st.session_state.password_attempts = 3
 
 # Título de la aplicación
-st.title("Sistema de Gestión de Casos")
+#st.title("Sistema de Gestión de Casos")
 
 # Página de inicio de sesión y consulta de documentos
 if not st.session_state.authenticated:

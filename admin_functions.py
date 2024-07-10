@@ -7,18 +7,6 @@ import datetime
 # Inicializar la gestión de usuarios y casos
 user_management = UserManagement()
 
-# CSS para expandir el ancho de los elementos
-st.markdown("""
-    <style>
-    .main .block-container {
-        padding: 1rem 1rem;
-    }
-    .stSidebar .css-1aumxhk {
-        padding: 1rem 1rem;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
 def admin_interface():
     with st.sidebar:
         main_option = option_menu(
@@ -34,34 +22,6 @@ def admin_interface():
             st.session_state.role = None
             st.session_state.username = None
             st.experimental_rerun()
-        
-        if main_option == "Administrar Casos":
-            st.markdown("&nbsp;&nbsp;&nbsp;&nbsp;Administrar Casos")
-            sub_option = option_menu(
-                "",
-                ["Agregar Caso", "Modificar Caso"],
-                icons=["folder-plus", "pencil"],
-                menu_icon="",
-                default_index=0,
-                orientation="vertical",
-                styles={
-                    "container": {"padding-left": "1.5rem"}
-                }
-            )
-        
-        elif main_option == "Administrar Usuarios":
-            st.markdown("&nbsp;&nbsp;&nbsp;&nbsp;Administrar Usuarios")
-            sub_option = option_menu(
-                "",
-                ["Agregar Usuario", "Modificar Usuario"],
-                icons=["person-plus", "pencil"],
-                menu_icon="",
-                default_index=0,
-                orientation="vertical",
-                styles={
-                    "container": {"padding-left": "1.5rem"}
-                }
-            )
 
     if main_option == "Visualización":
         st.subheader("Visualización de Casos")
@@ -97,6 +57,14 @@ def admin_interface():
             st.warning("No hay casos disponibles para mostrar.")
 
     elif main_option == "Administrar Casos":
+        sub_option = option_menu(
+                "Administrar Casos",
+                ["Agregar Caso", "Modificar Caso"],
+                icons=["folder-plus", "pencil"],
+                menu_icon="folder",
+                default_index=0,
+                orientation="horizontal",
+            )
         if sub_option == "Agregar Caso":
             st.subheader("Agregar Nuevo Caso")
             with st.form("add_case_form"):
@@ -105,7 +73,7 @@ def admin_interface():
                 investigated_first_name = st.text_input("Nombre del Investigado")
                 dni = st.text_input("DNI del Investigado", max_chars=8)
                 created_date = st.date_input("Fecha de Creación", value=datetime.date.today())
-                deadline = st.number_input("Tiempo Máximo de Entrega (días)", min_value=1, value=30)#st.date_input("Fecha de Entrega", value=datetime.date.today())
+                deadline = st.date_input("Fecha de Entrega", value=datetime.date.today())
 
                 if len(dni) != 8 or not dni.isdigit():
                     dni = ""
@@ -177,7 +145,7 @@ def admin_interface():
                     investigated_first_name = st.text_input("Nombre del Investigado", value=case.get('investigated_first_name', ''))
                     dni = st.text_input("DNI del Investigado", value=case.get('dni', ''), max_chars=8)
                     created_date = st.date_input("Fecha de Creación", value=pd.to_datetime(case.get('created_date')))
-                    deadline = st.number_input("Tiempo Máximo de Entrega (días)", value=case.get('deadline', 30))
+                    deadline = st.date_input("Fecha de entrega", value=pd.to_datetime(case.get('deadline')))
             
                     if len(dni) != 8 or not dni.isdigit():
                         st.warning("DNI inválido")
@@ -197,6 +165,14 @@ def admin_interface():
                         st.experimental_rerun()
 
     elif main_option == "Administrar Usuarios":
+        sub_option = option_menu(
+                "Administar Usuarios",
+                ["Agregar Usuario", "Modificar Usuario"],
+                icons=["person-plus", "pencil"],
+                menu_icon="person",
+                default_index=0,
+                orientation="horizontal",
+            )
         if sub_option == "Agregar Usuario":
             st.subheader("Agregar Nuevo Usuario")
             with st.form("add_user_form"):
@@ -211,14 +187,9 @@ def admin_interface():
 
                 if add_user_button:
                     if len(dni) == 8 and dni.isdigit():
-                        import re
-                        password_pattern = re.compile(r'^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{6}$')
-                        if password_pattern.match(password):
-                            user_management.create_user(username, password, role, first_name, last_name, number_phone, dni)
-                            st.success(f"Usuario {username} agregado exitosamente")
-                            #st.experimental_rerun()
-                        else:
-                            st.warning("La contraseña debe contener exactamente 6 caracteres, incluyendo letras y números.")
+                        user_management.create_user(username, password, role, first_name, last_name, number_phone, dni)
+                        st.success(f"Usuario {username} agregado exitosamente")
+                        #st.experimental_rerun()
                     else:
                         st.warning("Por favor, ingrese un DNI válido de 8 dígitos.")
 
