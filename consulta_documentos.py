@@ -8,7 +8,7 @@ user_management = UserManagement()
 
 # Función para la consulta de documentos
 def consulta_documentos():
-    st.subheader("Consultar Estado del Caso")
+    st.title("Consultar Estado del Caso")
     with st.form("check_status_form"):
         case_code = st.text_input("Código del Caso")
         check_button = st.form_submit_button("Consultar Estado")
@@ -71,7 +71,11 @@ def mostrar_informacion_del_documento(case):
     else:
         created_date = case['created_date']
     
-    delivery_date = created_date + datetime.timedelta(days=case['deadline'])
+    if isinstance(case['deadline'], str):
+        delivery_date = datetime.datetime.strptime(case['deadline'], "%Y-%m-%d").date()
+    else:
+        delivery_date = case['deadline']
+    
     st.write(f"**Fecha de Entrega:** {delivery_date.strftime('%Y-%m-%d')}")
 
     st.write(f"**Etapa del Caso:** {case['stage']}")
