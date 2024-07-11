@@ -5,6 +5,8 @@ from user_functions import user_interface, check_document_status, login
 from admin_functions import admin_interface
 import consulta_documentos
 
+st.set_page_config(page_title="Calentime", page_icon="date", layout="wide")
+st.markdown("##")
 # Inicializar la gestión de usuarios y casos
 user_management = UserManagement()
 user_management.create_default_superusers()

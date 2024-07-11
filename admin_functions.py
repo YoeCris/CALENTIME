@@ -3,6 +3,8 @@ import pandas as pd
 from user_management import UserManagement
 from streamlit_option_menu import option_menu
 import datetime
+import matplotlib.pyplot as plt
+import plotly.express as px
 
 # Inicializar la gestión de usuarios y casos
 user_management = UserManagement()
@@ -24,35 +26,63 @@ def admin_interface():
             st.experimental_rerun()
 
     if main_option == "Visualización":
-        st.subheader("Visualización de Casos")
+        st.subheader("Visualización de Métricas y Progresos")
+        
+        # Obtener todos los casos
         casos = user_management.get_all_cases()
-    
+        
         if casos:
             df = pd.DataFrame(casos)
             df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'created_date', 'deadline', 'stage']
-            df = df.rename(columns={
-                'case_id': 'ID',
-                'code': 'Código del Caso',
-                'investigated_last_name': 'Apellidos del Investigado',
-                'investigated_first_name': 'Nombre del Investigado',
-                'dni': 'DNI del Investigado',
-                'reviewer': 'Encargado de Revisar el Caso',
-                'created_date': 'Fecha de Creación',
-                'deadline': 'Fecha de Entrega',
-                'stage': 'Etapa',
-            })
 
-            for i, row in df.iterrows():
-                cols = st.columns((3, 9, 12, 12, 11, 12, 15, 10, 15))
-                cols[0].write(row['ID'])
-                cols[1].write(row['Código del Caso'])
-                cols[2].write(row['Apellidos del Investigado'])
-                cols[3].write(row['Nombre del Investigado'])
-                cols[4].write(row['DNI del Investigado'])
-                cols[5].write(row['Encargado de Revisar el Caso'])
-                cols[6].write(row['Fecha de Creación'])
-                cols[7].write(row['Fecha de Entrega'])
-                cols[8].write(row['Etapa'])
+            # Convertir fechas a datetime
+            df['created_date'] = pd.to_datetime(df['created_date'])
+            df['deadline'] = pd.to_datetime(df['deadline'])
+
+            # Gráfico de distribución de casos por etapa
+            fig1 = px.histogram(df, x='stage', title='Distribución de Casos por Etapa')
+            st.plotly_chart(fig1)
+
+            #Grafico de distribucion de casos por Encargado
+            fig2 = px.bar(
+                df, 
+                x='reviewer', 
+                color='stage', 
+                barmode='group', 
+                title='Distribución de Casos por Encargado y Etapa'
+            )
+            st.plotly_chart(fig2)
+
+            # Gráfico de progreso por encargado
+            reviewers = df['reviewer'].unique()
+            progress_data = []
+            for reviewer in reviewers:
+                reviewer_cases = df[df['reviewer'] == reviewer]
+                total_cases = len(reviewer_cases)
+                reviewed_cases = len(reviewer_cases[reviewer_cases['stage'] == 'Revisado'])
+                progress = (reviewed_cases / total_cases) * 100 if total_cases > 0 else 0
+                progress_data.append({'reviewer': reviewer, 'progress': progress})
+            progress_df = pd.DataFrame(progress_data)
+
+            fig3 = px.bar(progress_df, x='reviewer', y='progress', title='Progreso de Revisión por Encargado')
+            st.plotly_chart(fig3)
+
+            # Gráfico de casos por estado
+            status_counts = df['stage'].value_counts().reset_index()
+            status_counts.columns = ['stage', 'count']
+            fig4 = px.pie(status_counts, values='count', names='stage', title='Estado de los Casos')
+            st.plotly_chart(fig4)
+
+            # Tabla de resumen de casos por encargado
+            st.subheader("Resumen de Casos por Encargado")
+            reviewer_summary = df.groupby('reviewer').agg({
+                'code': 'count',
+                'stage': lambda x: (x == 'Revisado').sum()
+            }).reset_index()
+            reviewer_summary.columns = ['Encargado', 'Total de Casos', 'Casos Revisados']
+            reviewer_summary['Casos Pendientes'] = reviewer_summary['Total de Casos'] - reviewer_summary['Casos Revisados']
+            st.dataframe(reviewer_summary)
+            
         else:
             st.warning("No hay casos disponibles para mostrar.")
 
@@ -79,10 +109,10 @@ def admin_interface():
                     dni = ""
 
                 users = user_management.get_users()
-                normal_users = [user['username'] for user in users if user['role'] == 'usuario']
+                normal_users = [user['first_name'] for user in users if user['role'] == 'usuario']
                 reviewer = st.selectbox("Encargado de Revisar el Caso", normal_users)
 
-                stage = st.selectbox("Etapa del caso", ['preparatoria', 'intermedia', 'juzgamiento'])
+                stage = st.selectbox("Etapa del caso", ['Preparatoria', 'Intermedia', 'Juzgamiento'])
 
                 add_case_button = st.form_submit_button("Agregar Caso")
         
@@ -112,7 +142,7 @@ def admin_interface():
                 })
 
                 for i, row in df.iterrows():
-                    cols = st.columns((3, 10, 15, 15, 8, 10, 13, 10, 10, 4, 4))
+                    cols = st.columns((3, 10, 15, 15, 8, 15, 13, 10, 10, 4, 4))
                     cols[0].write(row['ID'])
                     cols[1].write(row['Código'])
                     cols[2].write(row['Apellidos'])
@@ -132,7 +162,7 @@ def admin_interface():
                     if delete_button:
                         user_management.delete_case(row['ID'])
                         st.success(f"Caso con ID {row['ID']} eliminado exitosamente")
-                        st.experimental_rerun()
+                        #st.experimental_rerun()
 
             else:
                 st.warning("No hay casos disponibles para mostrar.")
@@ -152,17 +182,17 @@ def admin_interface():
                         dni = ""
             
                     users = user_management.get_users()
-                    normal_users = [user['username'] for user in users if user['role'] == 'usuario']
+                    normal_users = [user['first_name'] for user in users if user['role'] == 'usuario']
                     reviewer = st.selectbox("Encargado de Revisar el Caso", normal_users, index=normal_users.index(case.get('reviewer', '')))
 
-                    stage = st.selectbox("Etapa del Caso", ['preparatoria', 'intermedia', 'juzgamiento'], index=['preparatoria', 'intermedia', 'juzgamiento'].index(case.get('stage', 'preparatoria')))
+                    stage = st.selectbox("Etapa del Caso", ['Preparatoria', 'Intermedia', 'Juzgamiento'], index=['preparatoria', 'intermedia', 'juzgamiento'].index(case.get('stage', 'preparatoria')))
                     edit_case_button = st.form_submit_button("Actualizar Caso")
 
                     if edit_case_button and dni:
                         user_management.update_case(case['case_id'], code, investigated_last_name, investigated_first_name, dni, reviewer, created_date, deadline, stage)
                         st.success(f"Caso {code} actualizado exitosamente")
                         st.session_state.pop('edit_case')
-                        st.experimental_rerun()
+                        #st.experimental_rerun()
 
     elif main_option == "Administrar Usuarios":
         sub_option = option_menu(
@@ -226,12 +256,12 @@ def admin_interface():
                     
                     if edit_button:
                         st.session_state.edit_user = user_management.get_user_by_username(row['Nombre de Usuario'])
-                        st.experimental_rerun()
+                        #st.experimental_rerun()
                     
                     if delete_button:
                         user_management.delete_user(row['Nombre de Usuario'])
                         st.success(f"Usuario {row['Nombre de Usuario']} eliminado exitosamente")
-                        st.experimental_rerun()
+                        #st.experimental_rerun()
 
             else:
                 st.warning("No hay usuarios disponibles para mostrar.")
