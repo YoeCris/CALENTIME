@@ -39,43 +39,39 @@ def admin_interface():
             df['created_date'] = pd.to_datetime(df['created_date'])
             df['deadline'] = pd.to_datetime(df['deadline'])
 
-            col1, col2 = st.columns(2)
+            # Gráfico de distribución de casos por etapa
+            fig1 = px.histogram(df, x='stage', title='Distribución de Casos por Etapa')
+            st.plotly_chart(fig1)
 
-            with col1:
-                # Gráfico de distribución de casos por etapa
-                fig1 = px.histogram(df, x='stage', title='Distribución de Casos por Etapa')
-                st.plotly_chart(fig1)
+            #Grafico de distribucion de casos por Encargado
+            fig2 = px.bar(
+                df, 
+                x='reviewer', 
+                color='stage', 
+                barmode='group', 
+                title='Distribución de Casos por Encargado y Etapa'
+            )
+            st.plotly_chart(fig2)
 
-                # Gráfico de progreso por encargado
-                reviewers = df['reviewer'].unique()
-                progress_data = []
-                for reviewer in reviewers:
-                    reviewer_cases = df[df['reviewer'] == reviewer]
-                    total_cases = len(reviewer_cases)
-                    reviewed_cases = len(reviewer_cases[reviewer_cases['stage'] == 'Revisado'])
-                    progress = (reviewed_cases / total_cases) * 100 if total_cases > 0 else 0
-                    progress_data.append({'reviewer': reviewer, 'progress': progress})
-                progress_df = pd.DataFrame(progress_data)
+            # Gráfico de progreso por encargado
+            reviewers = df['reviewer'].unique()
+            progress_data = []
+            for reviewer in reviewers:
+                reviewer_cases = df[df['reviewer'] == reviewer]
+                total_cases = len(reviewer_cases)
+                reviewed_cases = len(reviewer_cases[reviewer_cases['stage'] == 'Revisado'])
+                progress = (reviewed_cases / total_cases) * 100 if total_cases > 0 else 0
+                progress_data.append({'reviewer': reviewer, 'progress': progress})
+            progress_df = pd.DataFrame(progress_data)
 
-                fig3 = px.bar(progress_df, x='reviewer', y='progress', title='Progreso de Revisión por Encargado')
-                st.plotly_chart(fig3)
+            fig3 = px.bar(progress_df, x='reviewer', y='progress', title='Progreso de Revisión por Encargado')
+            st.plotly_chart(fig3)
 
-            with col2:
-                # Gráfico de distribución de casos por encargado y etapas
-                fig2 = px.bar(
-                    df, 
-                    x='reviewer', 
-                    color='stage', 
-                    barmode='group', 
-                    title='Distribución de Casos por Encargado y Etapa'
-                )
-                st.plotly_chart(fig2)
-
-                # Gráfico de casos por estado
-                status_counts = df['stage'].value_counts().reset_index()
-                status_counts.columns = ['stage', 'count']
-                fig4 = px.pie(status_counts, values='count', names='stage', title='Estado de los Casos')
-                st.plotly_chart(fig4)
+            # Gráfico de casos por estado
+            status_counts = df['stage'].value_counts().reset_index()
+            status_counts.columns = ['stage', 'count']
+            fig4 = px.pie(status_counts, values='count', names='stage', title='Estado de los Casos')
+            st.plotly_chart(fig4)
 
             # Tabla de resumen de casos por encargado
             st.subheader("Resumen de Casos por Encargado")
@@ -89,7 +85,7 @@ def admin_interface():
             
         else:
             st.warning("No hay casos disponibles para mostrar.")
-            
+
     elif main_option == "Administrar Casos":
         sub_option = option_menu(
                 "Administrar Casos",
@@ -199,8 +195,6 @@ def admin_interface():
                         #st.experimental_rerun()
 
     elif main_option == "Administrar Usuarios":
-        st.subheader("Administrar Usuarios")
-
         sub_option = option_menu(
                 "Administar Usuarios",
                 ["Agregar Usuario", "Modificar Usuario"],
@@ -229,37 +223,51 @@ def admin_interface():
                     else:
                         st.warning("Por favor, ingrese un DNI válido de 8 dígitos.")
 
-        usuarios = user_management.get_users()
-        if usuarios:
-            df = pd.DataFrame(usuarios)
-            df.columns = ['user_id', 'username', 'password', 'role', 'first_name', 'last_name', 'number_phone', 'dni']
-            df = df.rename(columns={ 
-                'user_id': 'ID',
-                'username': 'Nombre de Usuario',
-                'password': 'Contraseña',
-                'role': 'Rol',
-                'first_name': 'Nombres',
-                'last_name': 'Apellidos',
-                'number_phone': 'Celular',
-                'dni': 'DNI',
-            })
+        elif sub_option == "Modificar Usuario":
+            st.subheader("Editar o Eliminar Usuario")
 
-            # Añadir columna para los botones de editar y eliminar
-            def create_buttons(row):
-                edit_button = f'<button onclick="window.location.href=\'/?edit={row["Nombre de Usuario"]}\'">✏️</button>'
-                delete_button = f'<button onclick="window.location.href=\'/?delete={row["Nombre de Usuario"]}\'">🗑️</button>'
-                return edit_button + " " + delete_button
+            usuarios = user_management.get_users()
+            if usuarios:
+                df = pd.DataFrame(usuarios)
+                df.columns = ['user_id', 'username', 'password', 'role', 'first_name', 'last_name', 'number_phone','dni']
+                df = df.rename(columns={ 
+                    'user_id': 'ID',
+                    'username': 'Nombre de Usuario',
+                    'password': 'Contraseña',
+                    'role': 'Rol',
+                    'first_name': 'Nombres',
+                    'last_name': 'Apellidos',
+                    'number_phone': 'Celular',
+                    'dni': 'DNI',
+                })
 
-            df['Acciones'] = df.apply(create_buttons, axis=1)
+                for i, row in df.iterrows():
+                    cols = st.columns((3, 10, 7, 13, 15, 15, 9, 8, 5, 5))
+                    cols[0].write(row['ID'])
+                    cols[1].write(row['Nombre de Usuario'])
+                    cols[2].write(row['Contraseña'])
+                    cols[3].write(row['Rol'])
+                    cols[4].write(row['Nombres'])
+                    cols[5].write(row['Apellidos'])
+                    cols[6].write(row['Celular'])
+                    cols[7].write(row['DNI'])
+                    edit_button = cols[8].button("✏️", key=f"edit_{row['Nombre de Usuario']}")
+                    delete_button = cols[9].button("🗑️", key=f"delete_{row['Nombre de Usuario']}")
+                    
+                    if edit_button:
+                        st.session_state.edit_user = user_management.get_user_by_username(row['Nombre de Usuario'])
+                        #st.experimental_rerun()
+                    
+                    if delete_button:
+                        user_management.delete_user(row['Nombre de Usuario'])
+                        st.success(f"Usuario {row['Nombre de Usuario']} eliminado exitosamente")
+                        #st.experimental_rerun()
 
-            # Convertir el DataFrame a HTML y mostrarlo
-            st.markdown(df.to_html(escape=False, index=False), unsafe_allow_html=True)
+            else:
+                st.warning("No hay usuarios disponibles para mostrar.")
 
-            # Manejar edición y eliminación
-            query_params = st.query_params
-            if 'edit' in query_params:
-                selected_user = query_params['edit'][0]
-                user = user_management.get_user_by_username(selected_user)
+            if 'edit_user' in st.session_state:
+                user = st.session_state.edit_user
                 with st.form("edit_user_form"):
                     new_first_name = st.text_input("Nuevo Nombre", value=user['first_name'])
                     new_last_name = st.text_input("Nuevo Apellido", value=user['last_name'])
@@ -281,17 +289,8 @@ def admin_interface():
                             dni=new_dni
                         )
                         st.success("Usuario actualizado correctamente")
-                        st.experimental_set_query_params()
-                        st.experimental_rerun()
-
-            if 'delete' in query_params:
-                selected_user = query_params['delete'][0]
-                user_management.delete_user(selected_user)
-                st.success(f"Usuario {selected_user} eliminado exitosamente")
-                st.experimental_set_query_params()
-                st.experimental_rerun()
-        else:
-            st.warning("No hay usuarios disponibles para mostrar.")
+                        #del st.session_state.edit_user
+                        #st.experimental_rerun()
 
 def show_progress_bar(case):
     created_date = pd.to_datetime(case['created_date'])
