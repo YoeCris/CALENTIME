@@ -9,6 +9,32 @@ import plotly.express as px
 # Inicializar la gestión de usuarios y casos
 user_management = UserManagement()
 
+def show_progress_bar(case):
+    created_date = pd.to_datetime(case['created_date'])
+    deadline = pd.to_datetime(case['deadline'])
+    status = case.get('stage', 'No Revisado')
+    current_date = pd.to_datetime('today')
+    days_elapsed = (current_date - created_date).days
+    total_days = (deadline - created_date).days
+    progress = min(100, max(0, (days_elapsed / total_days) * 100))
+
+    bar_color = 'red'
+    if progress <= 50:
+        bar_color = 'green'
+    elif 50 < progress <= 75:
+        bar_color = 'orange'
+
+    st.progress(progress / 100, f"{status} ({days_elapsed} días / {total_days} días)", color=bar_color)
+
+    if status == "No Revisado":
+        if st.button(f"Iniciar Revisión - {case['code']}", key=f"start_{case['case_id']}"):
+            user_management.update_case_status(case['case_id'], "En Revisión")
+            st.experimental_rerun()
+    elif status == "En Revisión":
+        if st.button(f"Entregar Caso - {case['code']}", key=f"finish_{case['case_id']}"):
+            user_management.update_case_status(case['case_id'], "Revisado")
+            st.experimental_rerun()
+
 def admin_interface():
     with st.sidebar:
         main_option = option_menu(
@@ -34,10 +60,6 @@ def admin_interface():
         if casos:
             df = pd.DataFrame(casos)
             df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'created_date', 'deadline', 'stage']
-
-            # Convertir fechas a datetime
-            df['created_date'] = pd.to_datetime(df['created_date'])
-            df['deadline'] = pd.to_datetime(df['deadline'])
 
             col1, col2 = st.columns(2)
 
@@ -86,7 +108,7 @@ def admin_interface():
             reviewer_summary.columns = ['Encargado', 'Total de Casos', 'Casos Revisados']
             reviewer_summary['Casos Pendientes'] = reviewer_summary['Total de Casos'] - reviewer_summary['Casos Revisados']
             st.dataframe(reviewer_summary)
-            
+        
         else:
             st.warning("No hay casos disponibles para mostrar.")
             
@@ -224,7 +246,7 @@ def admin_interface():
                 if add_user_button:
                     if len(dni) == 8 and dni.isdigit():
                         user_management.create_user(username, password, role, first_name, last_name, number_phone, dni)
-                        st.success(f"Usuario {username} agregado exitosamente")
+                        st.success(f"Usuario {first_name} agregado exitosamente")
                         #st.experimental_rerun()
                     else:
                         st.warning("Por favor, ingrese un DNI válido de 8 dígitos.")
@@ -292,29 +314,3 @@ def admin_interface():
                 st.experimental_rerun()
         else:
             st.warning("No hay usuarios disponibles para mostrar.")
-
-def show_progress_bar(case):
-    created_date = pd.to_datetime(case['created_date'])
-    deadline = case['deadline']
-    status = case['status']
-    current_date = pd.to_datetime('today')
-    days_elapsed = (current_date - created_date).days
-    progress = min(100, max(0, (days_elapsed / deadline) * 100))
-
-    bar_color = 'red'
-    if progress <= 50:
-        bar_color = 'green'
-    elif 50 < progress <= 75:
-        bar_color = 'orange'
-
-    st.progress(progress / 100, text=f"{status} ({days_elapsed} días / {deadline} días)", color=bar_color)
-
-    if status == "No Revisado":
-        if st.button(f"Iniciar Revisión - {case['code']}", key=f"start_{case['case_id']}"):
-            user_management.update_case_status(case['case_id'], "En Revisión")
-            st.experimental_rerun()
-    elif status == "En Revisión":
-        if st.button(f"Entregar Caso - {case['code']}", key=f"finish_{case['case_id']}"):
-            user_management.update_case_status(case['case_id'], "Revisado")
-            # Aquí podrías generar un PDF con los detalles del caso
-            st.experimental_rerun()

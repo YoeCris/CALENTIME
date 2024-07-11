@@ -82,7 +82,7 @@ def user_interface():
             
         if main_option == "Ver Documentos":
             st.subheader("Ver Documentos")
-            casos = user_management.get_cases_by_reviewer(st.session_state.username)
+            casos = user_management.get_cases_by_reviewer(st.session_state.first_name)
         
             if casos:
                 df = pd.DataFrame(casos)
