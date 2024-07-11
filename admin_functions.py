@@ -29,11 +29,11 @@ def show_progress_bar(case):
     if status == "No Revisado":
         if st.button(f"Iniciar Revisión - {case['code']}", key=f"start_{case['case_id']}"):
             user_management.update_case_status(case['case_id'], "En Revisión")
-            st.experimental_rerun()
+            st.rerun()
     elif status == "En Revisión":
         if st.button(f"Entregar Caso - {case['code']}", key=f"finish_{case['case_id']}"):
             user_management.update_case_status(case['case_id'], "Revisado")
-            st.experimental_rerun()
+            st.rerun()
 
 def admin_interface():
     with st.sidebar:
@@ -49,7 +49,7 @@ def admin_interface():
             st.session_state.authenticated = False
             st.session_state.role = None
             st.session_state.username = None
-            st.experimental_rerun()
+            st.rerun()
 
     if main_option == "Visualización":
         st.subheader("Visualización de Métricas y Progresos")
@@ -146,7 +146,7 @@ def admin_interface():
                     if dni:
                         user_management.create_case(code, investigated_last_name, investigated_first_name, dni, reviewer, created_date, deadline, stage)
                         st.success(f"Caso {code} agregado exitosamente")
-                        #st.experimental_rerun()
+                        st.rerun()
 
         elif sub_option == "Modificar Caso":
             st.subheader("Editar o Eliminar Caso")
@@ -183,12 +183,12 @@ def admin_interface():
                     
                     if edit_button:
                         st.session_state.edit_case = user_management.get_case(row['ID'])
-                        st.experimental_rerun()
+                        st.rerun()
                     
                     if delete_button:
                         user_management.delete_case(row['ID'])
                         st.success(f"Caso con ID {row['ID']} eliminado exitosamente")
-                        #st.experimental_rerun()
+                        #st.rerun()
 
             else:
                 st.warning("No hay casos disponibles para mostrar.")
@@ -218,7 +218,7 @@ def admin_interface():
                         user_management.update_case(case['case_id'], code, investigated_last_name, investigated_first_name, dni, reviewer, created_date, deadline, stage)
                         st.success(f"Caso {code} actualizado exitosamente")
                         st.session_state.pop('edit_case')
-                        #st.experimental_rerun()
+                        #st.rerun()
 
     elif main_option == "Administrar Usuarios":
         st.subheader("Administrar Usuarios")
@@ -247,7 +247,7 @@ def admin_interface():
                     if len(dni) == 8 and dni.isdigit():
                         user_management.create_user(username, password, role, first_name, last_name, number_phone, dni)
                         st.success(f"Usuario {first_name} agregado exitosamente")
-                        #st.experimental_rerun()
+                        #st.rerun()
                     else:
                         st.warning("Por favor, ingrese un DNI válido de 8 dígitos.")
 
@@ -304,13 +304,13 @@ def admin_interface():
                         )
                         st.success("Usuario actualizado correctamente")
                         st.experimental_set_query_params()
-                        st.experimental_rerun()
+                        st.rerun()
 
             if 'delete' in query_params:
                 selected_user = query_params['delete'][0]
                 user_management.delete_user(selected_user)
                 st.success(f"Usuario {selected_user} eliminado exitosamente")
                 st.experimental_set_query_params()
-                st.experimental_rerun()
+                st.rerun()
         else:
             st.warning("No hay usuarios disponibles para mostrar.")

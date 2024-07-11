@@ -1,8 +1,8 @@
-# user_functions.py
 import streamlit as st
 import pandas as pd
 from user_management import UserManagement
 from streamlit_option_menu import option_menu
+import datetime
 
 # Inicializar la gestión de usuarios y casos
 user_management = UserManagement()
@@ -39,12 +39,37 @@ def login(username, password):
         st.session_state.authenticated = True
         st.session_state.role = user['role']
         st.session_state.username = username
+        st.session_state.first_name = user['first_name']
         st.session_state.user_id = user['user_id']
         st.session_state.password_attempts = 3
         return True
     else:
         st.warning("Nombre de usuario o contraseña inválidos")
         return False
+
+def calculate_progress(created_date, deadline):
+    total_time = (deadline - created_date).days
+    elapsed_time = (datetime.datetime.now() - created_date).days
+    progress = min(1, max(0, elapsed_time / total_time))
+    return progress
+
+def get_progress_color(progress):
+    if progress <= 0.5:
+        return "green"
+    elif progress <= 0.8:
+        return "yellow"
+    else:
+        return "red"
+
+def render_progress_bar(progress):
+    color = get_progress_color(progress)
+    percentage = int(progress * 100)
+    bar_html = f"""
+    <div style="background-color: #e0e0e0; border-radius: 5px; width: 100%; height: 20px;">
+        <div style="background-color: {color}; width: {percentage}%; height: 100%; border-radius: 5px;"></div>
+    </div>
+    """
+    return bar_html
 
 def user_interface():
     if 'authenticated' not in st.session_state:
@@ -62,7 +87,7 @@ def user_interface():
             
             if login_button:
                 if login(username, password):
-                    st.experimental_rerun()
+                    st.rerun()
     
     if st.session_state.authenticated:
         with st.sidebar:
@@ -78,38 +103,37 @@ def user_interface():
                 st.session_state.authenticated = False
                 st.session_state.role = None
                 st.session_state.username = None
-                st.experimental_rerun()
-            
+                st.rerun()
+
         if main_option == "Ver Documentos":
             st.subheader("Ver Documentos")
             casos = user_management.get_cases_by_reviewer(st.session_state.first_name)
-        
+
             if casos:
                 df = pd.DataFrame(casos)
-                df.columns = ['id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'created_date', 'deadline', 'stage']
+                df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'created_date', 'deadline', 'stage']
+
+                # Eliminar la columna 'reviewer' si no se necesita mostrar
+                df = df.drop(columns=['reviewer'])
+
+                # Renombrar columnas
                 df = df.rename(columns={
-                    'id': 'ID',
+                    'case_id': 'ID',
                     'code': 'Código del Documento',
                     'investigated_last_name': 'Apellidos del Investigado',
                     'investigated_first_name': 'Nombre del Investigado',
                     'dni': 'DNI del Investigado',
-                    'reviewer': 'Encargado de Revisar el Documento',
-                    'created_date': 'Fecha Creada',
-                    'deadline': 'Tiempo',
+                    'created_date': 'Fecha de Creación',
+                    'deadline': 'Fecha de Entrega',
                     'stage': 'Etapa',
                 })
 
-                for i, row in df.iterrows():
-                    cols = st.columns((3, 9, 12, 12, 11, 12, 15, 10, 15))
-                    cols[0].write(row['ID'])
-                    cols[1].write(row['Código del Documento'])
-                    cols[2].write(row['Apellidos del Investigado'])
-                    cols[3].write(row['Nombre del Investigado'])
-                    cols[4].write(row['DNI del Investigado'])
-                    cols[5].write(row['Encargado de Revisar el Documento'])
-                    cols[6].write(row['Fecha Creada'])
-                    cols[7].write(row['Tiempo'])
-                    cols[8].write(row['Etapa'])
+                # Calcular y agregar barra de progreso
+                df['Progreso'] = df.apply(lambda row: calculate_progress(row['Fecha de Creación'], row['Fecha de Entrega']), axis=1)
+                df['Barra de Progreso'] = df['Progreso'].apply(render_progress_bar)
+
+                # Mostrar el DataFrame con barras de progreso simples
+                st.write(df.to_html(escape=False), unsafe_allow_html=True)
             else:
                 st.warning("No hay documentos disponibles para mostrar.")
 
@@ -145,7 +169,7 @@ def user_interface():
                             number_phone=number_phone
                         )
                         st.success("Datos personales actualizados correctamente")
-                        st.experimental_rerun()
+                        st.rerun()
 
             elif sub_option == "Cambiar Contraseña":
                 st.subheader("Cambiar Contraseña")
@@ -161,7 +185,7 @@ def user_interface():
                             if user and user['password'] == current_password:
                                 user_management.update_user_password(st.session_state.username, new_password)
                                 st.success("Se actualizó correctamente su contraseña")
-                                st.experimental_rerun()
+                                st.rerun()
                             else:
                                 st.warning("Contraseña actual incorrecta")
                         else:

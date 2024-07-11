@@ -115,23 +115,29 @@ class UserManagement:
             print(f"Error: {err}")
             return None
     
-    def get_user_by_username(self, username):
-        try:
-            sql = "SELECT * FROM users WHERE username = %s"
-            self.cursor.execute(sql, (username,))
-            return self.cursor.fetchone()
-        except mysql.connector.Error as err:
-            print(f"Error: {err}")
-            return None
+    # def get_user_by_username(self, username):
+    #     try:
+    #         sql = "SELECT * FROM users WHERE username = %s"
+    #         self.cursor.execute(sql, (username,))
+    #         return self.cursor.fetchone()
+    #     except mysql.connector.Error as err:
+    #         print(f"Error: {err}")
+    #         return None
+
+    # def get_cases_by_reviewer(self, username):
+    #     try:
+    #         sql = "SELECT * FROM cases WHERE username = %s"
+    #         self.cursor.execute(sql, (username,))
+    #         return self.cursor.fetchall()
+    #     except mysql.connector.Error as err:
+    #         print(f"Error: {err}")
+    #         return None
+    
 
     def get_cases_by_reviewer(self, reviewer):
-        try:
-            sql = "SELECT * FROM cases WHERE reviewer = %s"
-            self.cursor.execute(sql, (reviewer,))
-            return self.cursor.fetchall()
-        except mysql.connector.Error as err:
-            print(f"Error: {err}")
-            return None
+        query = "SELECT * FROM cases WHERE reviewer = %s"
+        self.cursor.execute(query, (reviewer,))
+        return self.cursor.fetchall()
 
     def update_case(self, case_id, code, investigated_last_name, investigated_first_name, dni, reviewer, created_date, deadline, stage):
         try:
