@@ -23,55 +23,52 @@ def admin_interface():
             st.session_state.authenticated = False
             st.session_state.role = None
             st.session_state.username = None
-            st.experimental_rerun()
+            st.rerun()
 
-    if main_option == "Visualización":
-        st.subheader("Visualización de Métricas y Progresos")
-        
-        # Obtener todos los casos
+    if main_option == "Visualización":        
         casos = user_management.get_all_cases()
         
         if casos:
             df = pd.DataFrame(casos)
             df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'created_date', 'deadline', 'stage']
 
-            # Convertir fechas a datetime
-            df['created_date'] = pd.to_datetime(df['created_date'])
-            df['deadline'] = pd.to_datetime(df['deadline'])
+            col1, col2 = st.columns(2)
 
-            # Gráfico de distribución de casos por etapa
-            fig1 = px.histogram(df, x='stage', title='Distribución de Casos por Etapa')
-            st.plotly_chart(fig1)
+            with col1:
+                # Gráfico de distribución de casos por etapa
+                fig1 = px.histogram(df, x='stage', title='Distribución de Casos por Etapa')
+                st.plotly_chart(fig1)
 
-            #Grafico de distribucion de casos por Encargado
-            fig2 = px.bar(
-                df, 
-                x='reviewer', 
-                color='stage', 
-                barmode='group', 
-                title='Distribución de Casos por Encargado y Etapa'
-            )
-            st.plotly_chart(fig2)
+                # Gráfico de progreso por encargado
+                reviewers = df['reviewer'].unique()
+                progress_data = []
+                for reviewer in reviewers:
+                    reviewer_cases = df[df['reviewer'] == reviewer]
+                    total_cases = len(reviewer_cases)
+                    reviewed_cases = len(reviewer_cases[reviewer_cases['stage'] == 'Revisado'])
+                    progress = (reviewed_cases / total_cases) * 100 if total_cases > 0 else 0
+                    progress_data.append({'reviewer': reviewer, 'progress': progress})
+                progress_df = pd.DataFrame(progress_data)
 
-            # Gráfico de progreso por encargado
-            reviewers = df['reviewer'].unique()
-            progress_data = []
-            for reviewer in reviewers:
-                reviewer_cases = df[df['reviewer'] == reviewer]
-                total_cases = len(reviewer_cases)
-                reviewed_cases = len(reviewer_cases[reviewer_cases['stage'] == 'Revisado'])
-                progress = (reviewed_cases / total_cases) * 100 if total_cases > 0 else 0
-                progress_data.append({'reviewer': reviewer, 'progress': progress})
-            progress_df = pd.DataFrame(progress_data)
+                fig3 = px.bar(progress_df, x='reviewer', y='progress', title='Progreso de Revisión por Encargado')
+                st.plotly_chart(fig3)
 
-            fig3 = px.bar(progress_df, x='reviewer', y='progress', title='Progreso de Revisión por Encargado')
-            st.plotly_chart(fig3)
+            with col2:
+                # Gráfico de distribución de casos por encargado y etapas
+                fig2 = px.bar(
+                    df, 
+                    x='reviewer', 
+                    color='stage', 
+                    barmode='group', 
+                    title='Distribución de Casos por Encargado y Etapa'
+                )
+                st.plotly_chart(fig2)
 
-            # Gráfico de casos por estado
-            status_counts = df['stage'].value_counts().reset_index()
-            status_counts.columns = ['stage', 'count']
-            fig4 = px.pie(status_counts, values='count', names='stage', title='Estado de los Casos')
-            st.plotly_chart(fig4)
+                # Gráfico de casos por estado
+                status_counts = df['stage'].value_counts().reset_index()
+                status_counts.columns = ['stage', 'count']
+                fig4 = px.pie(status_counts, values='count', names='stage', title='Estado de los Casos')
+                st.plotly_chart(fig4)
 
             # Tabla de resumen de casos por encargado
             st.subheader("Resumen de Casos por Encargado")
@@ -82,10 +79,10 @@ def admin_interface():
             reviewer_summary.columns = ['Encargado', 'Total de Casos', 'Casos Revisados']
             reviewer_summary['Casos Pendientes'] = reviewer_summary['Total de Casos'] - reviewer_summary['Casos Revisados']
             st.dataframe(reviewer_summary)
-            
+        
         else:
             st.warning("No hay casos disponibles para mostrar.")
-
+            
     elif main_option == "Administrar Casos":
         sub_option = option_menu(
                 "Administrar Casos",
@@ -120,7 +117,7 @@ def admin_interface():
                     if dni:
                         user_management.create_case(code, investigated_last_name, investigated_first_name, dni, reviewer, created_date, deadline, stage)
                         st.success(f"Caso {code} agregado exitosamente")
-                        #st.experimental_rerun()
+                        st.rerun()
 
         elif sub_option == "Modificar Caso":
             st.subheader("Editar o Eliminar Caso")
@@ -142,7 +139,7 @@ def admin_interface():
                 })
 
                 for i, row in df.iterrows():
-                    cols = st.columns((3, 10, 15, 15, 8, 15, 13, 10, 10, 4, 4))
+                    cols = st.columns((5, 10, 15, 15, 8, 15, 13, 10, 10, 5, 5))
                     cols[0].write(row['ID'])
                     cols[1].write(row['Código'])
                     cols[2].write(row['Apellidos'])
@@ -157,12 +154,12 @@ def admin_interface():
                     
                     if edit_button:
                         st.session_state.edit_case = user_management.get_case(row['ID'])
-                        st.experimental_rerun()
+                        #st.rerun()
                     
                     if delete_button:
                         user_management.delete_case(row['ID'])
                         st.success(f"Caso con ID {row['ID']} eliminado exitosamente")
-                        #st.experimental_rerun()
+                        #st.rerun()
 
             else:
                 st.warning("No hay casos disponibles para mostrar.")
@@ -192,13 +189,13 @@ def admin_interface():
                         user_management.update_case(case['case_id'], code, investigated_last_name, investigated_first_name, dni, reviewer, created_date, deadline, stage)
                         st.success(f"Caso {code} actualizado exitosamente")
                         st.session_state.pop('edit_case')
-                        #st.experimental_rerun()
+                        st.rerun()
 
     elif main_option == "Administrar Usuarios":
         sub_option = option_menu(
                 "Administar Usuarios",
-                ["Agregar Usuario", "Modificar Usuario"],
-                icons=["person-plus", "pencil"],
+                [ "Modificar Usuario","Agregar Usuario"],
+                icons=[ "pencil", "person-plus"],
                 menu_icon="person",
                 default_index=0,
                 orientation="horizontal",
@@ -218,12 +215,12 @@ def admin_interface():
                 if add_user_button:
                     if len(dni) == 8 and dni.isdigit():
                         user_management.create_user(username, password, role, first_name, last_name, number_phone, dni)
-                        st.success(f"Usuario {username} agregado exitosamente")
-                        #st.experimental_rerun()
+                        st.success(f"Usuario {first_name} agregado exitosamente")
+                        #st.rerun()
                     else:
                         st.warning("Por favor, ingrese un DNI válido de 8 dígitos.")
 
-        elif sub_option == "Modificar Usuario":
+        if sub_option == "Modificar Usuario":
             st.subheader("Editar o Eliminar Usuario")
 
             usuarios = user_management.get_users()
@@ -291,29 +288,3 @@ def admin_interface():
                         st.success("Usuario actualizado correctamente")
                         #del st.session_state.edit_user
                         #st.experimental_rerun()
-
-def show_progress_bar(case):
-    created_date = pd.to_datetime(case['created_date'])
-    deadline = case['deadline']
-    status = case['status']
-    current_date = pd.to_datetime('today')
-    days_elapsed = (current_date - created_date).days
-    progress = min(100, max(0, (days_elapsed / deadline) * 100))
-
-    bar_color = 'red'
-    if progress <= 50:
-        bar_color = 'green'
-    elif 50 < progress <= 75:
-        bar_color = 'orange'
-
-    st.progress(progress / 100, text=f"{status} ({days_elapsed} días / {deadline} días)", color=bar_color)
-
-    if status == "No Revisado":
-        if st.button(f"Iniciar Revisión - {case['code']}", key=f"start_{case['case_id']}"):
-            user_management.update_case_status(case['case_id'], "En Revisión")
-            st.experimental_rerun()
-    elif status == "En Revisión":
-        if st.button(f"Entregar Caso - {case['code']}", key=f"finish_{case['case_id']}"):
-            user_management.update_case_status(case['case_id'], "Revisado")
-            # Aquí podrías generar un PDF con los detalles del caso
-            st.experimental_rerun()

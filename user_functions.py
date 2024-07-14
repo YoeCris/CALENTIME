@@ -7,25 +7,6 @@ import datetime
 # Inicializar la gestión de usuarios y casos
 user_management = UserManagement()
 
-# CSS para el tema en azul
-st.markdown("""
-    <style>
-    .main .block-container {
-        padding: 1rem 1rem;
-    }
-    .stSidebar .css-1aumxhk {
-        padding: 1rem 1rem;
-    }
-    .css-1aumxhk h1 {
-        color: #1e3a8a; /* Cambia el color a azul */
-    }
-    .css-vl3ld5 {
-        color: #ffffff;
-        background-color: #1e3a8a; /* Cambia el color de fondo a azul */
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
 def check_document_status(case_code):
     case = user_management.get_case_by_code(case_code)
     if case:

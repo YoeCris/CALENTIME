@@ -49,6 +49,15 @@ class UserManagement:
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             return []
+    
+    def get_user_by_id(self, user_id):
+        try:
+            sql = "SELECT * FROM users WHERE user_id = %s"
+            self.cursor.execute(sql, (user_id,))
+            return self.cursor.fetchone()
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return None
 
     def get_user_by_username(self, username):
         try:
@@ -78,6 +87,15 @@ class UserManagement:
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             self.db.rollback()
+        
+    def delete_user_and_cases(self, user_id):
+        # Obtén los casos asociados al usuario
+        affected_cases = self.get_cases_by_reviewer(user_id)
+        # Elimina los casos asociados
+        for case in affected_cases:
+            self.delete_case(case['case_id'])
+        # Elimina al usuario
+        self.delete_user(user_id)
 
     # Consultas para la tabla cases
     def create_case(self, code, investigated_last_name, investigated_first_name, dni, reviewer, created_date, deadline, stage):
@@ -113,26 +131,7 @@ class UserManagement:
             return self.cursor.fetchone()
         except mysql.connector.Error as err:
             print(f"Error: {err}")
-            return None
-    
-    # def get_user_by_username(self, username):
-    #     try:
-    #         sql = "SELECT * FROM users WHERE username = %s"
-    #         self.cursor.execute(sql, (username,))
-    #         return self.cursor.fetchone()
-    #     except mysql.connector.Error as err:
-    #         print(f"Error: {err}")
-    #         return None
-
-    # def get_cases_by_reviewer(self, username):
-    #     try:
-    #         sql = "SELECT * FROM cases WHERE username = %s"
-    #         self.cursor.execute(sql, (username,))
-    #         return self.cursor.fetchall()
-    #     except mysql.connector.Error as err:
-    #         print(f"Error: {err}")
-    #         return None
-    
+            return None    
 
     def get_cases_by_reviewer(self, reviewer):
         query = "SELECT * FROM cases WHERE reviewer = %s"
