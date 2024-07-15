@@ -1,4 +1,3 @@
-# consulta_documentos.py
 import streamlit as st
 from user_management import UserManagement
 import datetime

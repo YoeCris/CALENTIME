@@ -44,7 +44,7 @@ def get_semaforo_color(days_left, total_days):
         return "🟡"
     else:
         return "🔴"
-    
+
 def user_interface():
     if 'authenticated' not in st.session_state:
         st.session_state.authenticated = False
@@ -108,14 +108,21 @@ def user_interface():
                     df['semaforo'] = df.apply(lambda row: get_semaforo_color(row['days_left'], row['total_days']), axis=1)
 
                 # Calcular el estado del caso
-                df['state'] = df['Etapa'].apply(lambda x: 'no revisado' if x == 'Preparatoria' else ('en proceso' if x == 'Intermedia' else 'revisado'))
+                df['state'] = df['Etapa'].apply(lambda x: 'no revisado' if x == 'preparatoria' else ('en proceso' if x == 'intermedia' else 'revisado'))
 
-                # Crear el DataFrame final
-                df_final = df[['Código del Documento', 'Etapa', 'days_left', 'semaforo', 'state']]
-
+                # Mostrar la tabla con los casos y un botón para iniciar
                 st.subheader("Resumen de Casos")
-                st.dataframe(df_final)
-
+                for i, row in df.iterrows():
+                    cols = st.columns(6)
+                    cols[0].write(row['Código del Documento'])
+                    cols[1].write(row['Apellidos del Investigado'])
+                    cols[2].write(row['Nombre del Investigado'])
+                    cols[3].write(row['state'])
+                    cols[4].write(row['semaforo'])
+                    if cols[5].button("Iniciar", key=row['ID']):
+                        st.session_state.page = 'case_details'
+                        st.session_state.selected_case = row['ID']
+                        st.experimental_rerun()
             else:
                 st.warning("No hay documentos disponibles para mostrar.")
 
@@ -172,3 +179,103 @@ def user_interface():
                                 st.warning("Contraseña actual incorrecta")
                         else:
                             st.warning("Las contraseñas nuevas no coinciden")
+
+    if 'page' in st.session_state and st.session_state.page == 'case_details':
+        consultar_documento_por_id()
+
+def consultar_documento_por_id():
+    case_id = st.session_state.selected_case
+    if case_id:
+        case = user_management.get_case(case_id)
+        if case:
+            st.title("Información del Caso")
+            mostrar_informacion_del_documento(case)
+            if st.button("Regresar a Ver Documentos"):
+                st.session_state.page = 'menu'
+                st.experimental_rerun()
+
+def mostrar_informacion_del_documento(case):
+    st.write("**Código del Caso:**", case['code'])
+    st.write("**Apellidos del Investigado:**", case['investigated_last_name'])
+    st.write("**Nombre del Investigado:**", case['investigated_first_name'])
+    st.write("**DNI del Investigado:**", case['dni'])
+    st.write("**Encargado de Revisar el Caso:**", case['reviewer'])
+    st.write("**Fecha de Creación:**", case['created_date'])
+    st.write("**Fecha de Entrega:**", case['deadline'])
+    st.write("**Etapa del Caso:**", case['stage'])
+
+    stages = ["preparatoria", "intermedia", "juzgamiento"]
+    current_stage_index = stages.index(case['stage'])
+
+    st.write("**Progreso del Caso:**")
+    cols = st.columns(len(stages) * 2 - 1)
+    for i, stage in enumerate(stages):
+        if i < current_stage_index:
+            circle_color = "background-color: black; color: white;"
+        elif i == current_stage_index:
+            circle_color = "background-color: blue; color: white;"
+        else:
+            circle_color = "background-color: white; color: black;"
+
+        cols[i * 2].markdown(f"""
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <div style="{circle_color} border-radius: 50%; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; font-weight: bold;">
+                    {i + 1}
+                </div>
+                <div style="margin-top: 5px;">
+                    {stage.capitalize()}
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        if i < len(stages) - 1:
+            cols[i * 2 + 1].markdown(f"""
+                <div style="background-color: lightgray; height: 2px; width: 100%; margin-top: 22px;"></div>
+            """, unsafe_allow_html=True)
+def case_details_page(case_id):
+    case = user_management.get_case(case_id)
+    if case:
+        st.title("Información del Caso")
+        mostrar_informacion_del_documento(case)
+        if st.button("Regresar a Ver Documentos"):
+            st.session_state.page = 'ver_documentos'
+            st.experimental_rerun()
+
+def mostrar_informacion_del_documento(case):
+    st.write("**Código del Caso:**", case['code'])
+    st.write("**Apellidos del Investigado:**", case['investigated_last_name'])
+    st.write("**Nombre del Investigado:**", case['investigated_first_name'])
+    st.write("**DNI del Investigado:**", case['dni'])
+    st.write("**Encargado de Revisar el Caso:**", case['reviewer'])
+    st.write("**Fecha de Creación:**", case['created_date'])
+    st.write("**Fecha de Entrega:**", case['deadline'])
+    st.write("**Etapa del Caso:**", case['stage'])
+
+    stages = ["preparatoria", "intermedia", "juzgamiento"]
+    current_stage_index = stages.index(case['stage'])
+
+    st.write("**Progreso del Caso:**")
+    cols = st.columns(len(stages) * 2 - 1)
+    for i, stage in enumerate(stages):
+        if i < current_stage_index:
+            circle_color = "background-color: black; color: white;"
+        elif i == current_stage_index:
+            circle_color = "background-color: blue; color: white;"
+        else:
+            circle_color = "background-color: white; color: black;"
+
+        cols[i * 2].markdown(f"""
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <div style="{circle_color} border-radius: 50%; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; font-weight: bold;">
+                    {i + 1}
+                </div>
+                <div style="margin-top: 5px;">
+                    {stage.capitalize()}
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        if i < len(stages) - 1:
+            cols[i * 2 + 1].markdown(f"""
+                <div style="background-color: lightgray; height: 2px; width: 100%; margin-top: 22px;"></div>
+            """, unsafe_allow_html=True)

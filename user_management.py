@@ -11,7 +11,7 @@ class UserManagement:
         )
         self.cursor = self.db.cursor(dictionary=True)
         self.users = self.get_users()
-
+    
     # Consultas para la tabla users
     def create_default_superusers(self):
         try:
@@ -67,6 +67,18 @@ class UserManagement:
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             return None
+
+    def update_case_stage(self, case_id, new_stage):
+        try:
+            sql = "UPDATE cases SET stage = %s WHERE case_id = %s"
+            self.cursor.execute(sql, (new_stage, case_id))
+            self.db.commit()
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            self.db.rollback()
+
+    def finalize_case(self, case_id):
+        self.update_case_stage(case_id, 'finalizado')
 
     def update_user(self, user_id, username, password, role, first_name, last_name, number_phone, dni):
         try:
