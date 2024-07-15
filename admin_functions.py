@@ -109,18 +109,18 @@ def admin_interface():
                 fig4 = px.pie(status_counts, values='count', names='stage', title='Estado de los Casos')
                 st.plotly_chart(fig4)
 
-            # Calcular días restantes y colores de semáforo
-            df['days_left'], df['total_days'] = zip(*df.apply(lambda row: calculate_days_left(row['created_date'], row['deadline']), axis=1))
-            df['semaforo'] = df.apply(lambda row: get_semaforo_color(row['days_left'], row['total_days']), axis=1)
+                # Calcular días restantes y colores de semáforo
+                df['days_left'], df['total_days'] = zip(*df.apply(lambda row: calculate_days_left(row['created_date'], row['deadline']), axis=1))
+                df['semaforo'] = df.apply(lambda row: get_semaforo_color(row['days_left'], row['total_days']), axis=1)
 
-            # Calcular el estado del caso
-            df['state'] = df['stage'].apply(lambda x: 'no revisado' if x == 'Preparatoria' else ('en proceso' if x == 'Intermedia' else 'revisado'))
+                # Calcular el estado del caso
+                df['state'] = df['stage'].apply(lambda x: 'no revisado' if x == 'Preparatoria' else ('en proceso' if x == 'Intermedia' else 'revisado'))
 
-            # Crear el DataFrame final
-            df_final = df[['code', 'reviewer', 'stage', 'days_left', 'semaforo', 'state']]
+                # Crear el DataFrame final
+                df_final = df[['code', 'reviewer', 'stage', 'days_left', 'semaforo', 'state']]
 
-            st.subheader("Resumen de Casos")
-            st.dataframe(df_final)
+                st.subheader("Resumen de Casos")
+                st.dataframe(df_final)
 
 
             # Tabla de resumen de casos por encargado

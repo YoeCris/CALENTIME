@@ -28,30 +28,23 @@ def login(username, password):
         st.warning("Nombre de usuario o contraseña inválidos")
         return False
 
-def calculate_progress(created_date, deadline):
-    total_time = (deadline - created_date).days
-    elapsed_time = (datetime.datetime.now() - created_date).days
-    progress = min(1, max(0, elapsed_time / total_time))
-    return progress
+def calculate_days_left(created_date, deadline):
+    today = datetime.date.today()
+    deadline_date = pd.to_datetime(deadline).date()
+    created_date = pd.to_datetime(created_date).date()
+    total_days = (deadline_date - created_date).days
+    days_left = (deadline_date - today).days
+    return days_left, total_days
 
-def get_progress_color(progress):
-    if progress <= 0.5:
-        return "green"
-    elif progress <= 0.8:
-        return "yellow"
+def get_semaforo_color(days_left, total_days):
+    percentage_left = (days_left / total_days) * 100
+    if percentage_left > 50:
+        return "🟢"
+    elif percentage_left > 20:
+        return "🟡"
     else:
-        return "red"
-
-def render_progress_bar(progress):
-    color = get_progress_color(progress)
-    percentage = int(progress * 100)
-    bar_html = f"""
-    <div style="background-color: #e0e0e0; border-radius: 5px; width: 100%; height: 20px;">
-        <div style="background-color: {color}; width: {percentage}%; height: 100%; border-radius: 5px;"></div>
-    </div>
-    """
-    return bar_html
-
+        return "🔴"
+    
 def user_interface():
     if 'authenticated' not in st.session_state:
         st.session_state.authenticated = False
@@ -108,13 +101,21 @@ def user_interface():
                     'deadline': 'Fecha de Entrega',
                     'stage': 'Etapa',
                 })
+                
+                # Calcular días restantes y colores de semáforo
+                if 'Fecha de Creación' in df.columns and 'Fecha de Entrega' in df.columns:
+                    df['days_left'], df['total_days'] = zip(*df.apply(lambda row: calculate_days_left(row['Fecha de Creación'], row['Fecha de Entrega']), axis=1))
+                    df['semaforo'] = df.apply(lambda row: get_semaforo_color(row['days_left'], row['total_days']), axis=1)
 
-                # Calcular y agregar barra de progreso
-                df['Progreso'] = df.apply(lambda row: calculate_progress(row['Fecha de Creación'], row['Fecha de Entrega']), axis=1)
-                df['Barra de Progreso'] = df['Progreso'].apply(render_progress_bar)
+                # Calcular el estado del caso
+                df['state'] = df['Etapa'].apply(lambda x: 'no revisado' if x == 'Preparatoria' else ('en proceso' if x == 'Intermedia' else 'revisado'))
 
-                # Mostrar el DataFrame con barras de progreso simples
-                st.write(df.to_html(escape=False), unsafe_allow_html=True)
+                # Crear el DataFrame final
+                df_final = df[['Código del Documento', 'Etapa', 'days_left', 'semaforo', 'state']]
+
+                st.subheader("Resumen de Casos")
+                st.dataframe(df_final)
+
             else:
                 st.warning("No hay documentos disponibles para mostrar.")
 
