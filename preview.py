@@ -288,3 +288,36 @@ def admin_interface():
                         st.success("Usuario actualizado correctamente")
                         #del st.session_state.edit_user
                         #st.experimental_rerun()
+        if st.session_state.page == 'edit_user' and 'edit_user' in st.session_state:
+        user_id = st.session_state.edit_user
+        user = user_management.get_user_by_id(user_id)
+        st.subheader("Editar Usuario")
+        with st.form("edit_user_form"):
+            new_first_name = st.text_input("Nuevo Nombre", value=user['first_name'], disabled=True)
+            new_last_name = st.text_input("Nuevo Apellido", value=user['last_name'], disabled=True)
+            new_dni = st.text_input("Nuevo DNI", value=user['dni'], max_chars=8)
+            new_number_phone = st.text_input("Nuevo Celular", value=user['number_phone'], max_chars=9)
+            new_role = st.selectbox("Nuevo Rol", ["administrador", "usuario"], index=["administrador", "usuario"].index(user['role']))
+            new_password = st.text_input("Nueva Contraseña", value=user['password'], type='password')
+            submit_button = st.form_submit_button("Actualizar Usuario")
+            cancel_button = st.form_submit_button("Cancelar")
+    
+            if submit_button:
+                user_management.update_user(
+                    user_id=user['user_id'],
+                    username=user['username'],
+                    password=new_password,
+                    role=new_role,
+                    first_name=new_first_name,
+                    last_name=new_last_name,
+                    number_phone=new_number_phone,
+                    dni=new_dni
+                )
+                st.success("Usuario actualizado correctamente")
+                del st.session_state['edit_user']
+                st.session_state.page = 'menu'
+                st.rerun()
+            elif cancel_button:
+                del st.session_state['edit_user']
+                st.session_state.page = 'menu'
+                st.rerun()

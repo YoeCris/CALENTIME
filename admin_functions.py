@@ -5,6 +5,7 @@ from streamlit_option_menu import option_menu
 import datetime
 import matplotlib.pyplot as plt
 import plotly.express as px
+import bcrypt
 
 # Inicializar la gestión de usuarios y casos
 user_management = UserManagement()
@@ -33,7 +34,19 @@ def get_semaforo_color(days_left, total_days):
         return "🟡"
     else:
         return "🔴"
-    
+
+st.write(
+    """
+    <style>
+    .header-text {
+        font-weight: bold;
+        color: #FFD700;  /* Cambia este valor por el color que prefieras */
+        padding: 5px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 def admin_interface():
     if 'page' not in st.session_state:
         st.session_state.page = 'menu'
@@ -63,11 +76,12 @@ def admin_interface():
             df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'created_date', 'deadline', 'stage']
 
             st.subheader('Filtros')
-            col1, col2 = st.columns(2)
-            with col1:
-                selected_reviewers = st.multiselect("Filtrar por Encargado", df['reviewer'].unique().tolist())
-            with col2:
-                selected_stages = st.multiselect("Filtrar por Etapa", df['stage'].unique().tolist())
+            with st.container():
+                col1, col2 = st.columns(2)
+                with col1:
+                    selected_reviewers = st.multiselect("Filtrar por Encargado", df['reviewer'].unique().tolist(), format_func=lambda x: "Elige una opción" if x == '' else x)
+                with col2:
+                    selected_stages = st.multiselect("Filtrar por Etapa", df['stage'].unique().tolist(), format_func=lambda x: "Elige una opción" if x == '' else x)
 
             # Filtrar los datos según las selecciones del usuario
             if selected_reviewers:
@@ -88,18 +102,18 @@ def admin_interface():
                 )
                 st.plotly_chart(fig2)
 
-                # Gráfico de progreso por encargado
-                reviewers = df['reviewer'].unique()
-                progress_data = []
-                for reviewer in reviewers:
-                    reviewer_cases = df[df['reviewer'] == reviewer]
-                    total_cases = len(reviewer_cases)
-                    reviewed_cases = len(reviewer_cases[reviewer_cases['stage'] == 'Revisado'])
-                    progress = (reviewed_cases / total_cases) * 100 if total_cases > 0 else 0
-                    progress_data.append({'reviewer': reviewer, 'progress': progress})
-                progress_df = pd.DataFrame(progress_data)
-
-                fig3 = px.bar(progress_df, x='reviewer', y='progress', title='Progreso de Revisión por Encargado')
+                # Gráfico de burbujas para supervisar los casos y encargados
+                bubble_df = df.groupby(['reviewer', 'stage']).size().reset_index(name='count')
+                fig3 = px.scatter(
+                    bubble_df, 
+                    x='reviewer', 
+                    y='stage', 
+                    size='count', 
+                    color='stage', 
+                    title='Supervisión de Casos por Encargado y Etapa',
+                    labels={'count': 'Número de Casos', 'reviewer': 'Encargado', 'stage': 'Etapa'},
+                    hover_data={'count': True}
+                )
                 st.plotly_chart(fig3)
 
             with col2:
@@ -115,13 +129,20 @@ def admin_interface():
 
                 # Calcular el estado del caso
                 df['state'] = df['stage'].apply(lambda x: 'no revisado' if x == 'Preparatoria' else ('en proceso' if x == 'Intermedia' else 'revisado'))
+                df_final = df[['semaforo', 'code', 'reviewer', 'stage', 'days_left', 'state']]
 
-                # Crear el DataFrame final
-                df_final = df[['code', 'reviewer', 'stage', 'days_left', 'semaforo', 'state']]
-
+                df_final = df_final.rename(
+                    columns={
+                        'semaforo': '',
+                        'code': 'Código',
+                        'reviewer': 'Encargado',
+                        'stage': 'Etapa',
+                        'days_left': 'Faltan',
+                        'state': 'Estado'
+                    }
+                )
                 st.subheader("Resumen de Casos")
                 st.dataframe(df_final)
-
 
             # Tabla de resumen de casos por encargado
             st.subheader("Resumen de Casos por Encargado")
@@ -153,12 +174,14 @@ def admin_interface():
             if casos:
                 df = pd.DataFrame(casos)
                 df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'created_date', 'deadline', 'stage']
-                # st.subheader('Filtros')
-                col1, col2 = st.columns(2)
-                with col1:
-                    selected_reviewers = st.multiselect("Filtrar por Encargado", df['reviewer'].unique().tolist())
-                with col2:
-                    selected_stages = st.multiselect("Filtrar por Etapa", df['stage'].unique().tolist())
+                #st.subheader('Filtros')
+                with st.container():
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        selected_reviewers = st.multiselect("Filtrar por Encargado", df['reviewer'].unique().tolist(), format_func=lambda x: "Elige una opción" if x == '' else x)
+                    with col2:
+                        selected_stages = st.multiselect("Filtrar por Etapa", df['stage'].unique().tolist(), format_func=lambda x: "Elige una opción" if x == '' else x)
+
 
                 # Filtrar los datos según las selecciones del usuario
                 if selected_reviewers:
@@ -166,22 +189,11 @@ def admin_interface():
                 if selected_stages:
                     df = df[df['stage'].isin(selected_stages)]
 
-                # Agregar títulos de columnas
-                st.write(
-                    """
-                    <style>
-                    .header-text {
-                        font-weight: bold;
-                    }
-                    </style>
-                    """,
-                    unsafe_allow_html=True
-                )
-                cols = st.columns((5, 10, 15, 15, 8, 15, 13, 10, 10, 5, 5))
+                cols = st.columns((5, 10, 15, 15, 8, 15, 13, 10, 10, 5, 7))
                 headers = ["ID", "Código", "Apellidos", "Nombres", "DNI", "Encargado", "Etapa", "Fecha de Creación", "Fecha de Entrega", "Editar", "Eliminar"]
                 for col, header in zip(cols, headers):
                     col.markdown(f"<p class='header-text'>{header}</p>", unsafe_allow_html=True)
-                
+
                 df = df.rename(columns={
                     'case_id': 'ID',
                     'code': 'Código',
@@ -195,7 +207,7 @@ def admin_interface():
                 })
 
                 for i, row in df.iterrows():
-                    cols = st.columns((5, 10, 15, 15, 8, 15, 13, 10, 10, 5, 5))
+                    cols = st.columns((5, 10, 15, 15, 8, 15, 13, 10, 10, 5, 7))
                     cols[0].write(f"{row['ID']}", unsafe_allow_html=True)
                     cols[1].write(row['Código'])
                     cols[2].write(row['Apellidos'])
@@ -271,21 +283,12 @@ def admin_interface():
                     'number_phone': 'Celular',
                     'dni': 'DNI',
                 })
-                # Agregar títulos de columnas
-                st.write(
-                    """
-                    <style>
-                    .header-text {
-                        font-weight: bold;
-                    }
-                    </style>
-                    """,
-                    unsafe_allow_html=True
-                )
+
                 cols = st.columns((3, 10, 7, 13, 15, 15, 9, 8, 5, 5))
                 headers = ["ID", "Usuario", "Contraseña", "Rol", "Nombres", "Apellidos", "Celular", "DNI", "Editar", "Eliminar"]
                 for col, header in zip(cols, headers):
                     col.markdown(f"<p class='header-text'>{header}</p>", unsafe_allow_html=True)
+
 
                 for i, row in df.iterrows():
                     cols = st.columns((3, 10, 7, 13, 15, 15, 9, 8, 5, 5))
@@ -323,11 +326,13 @@ def admin_interface():
 
                 if add_user_button:
                     if validate_dni(dni):
-                        user_management.create_user(username, password, role, first_name, last_name, number_phone, dni)
+                        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+                        user_management.create_user(username, hashed_password.decode('utf-8'), role, first_name, last_name, number_phone, dni)
                         st.success(f"Usuario {first_name} agregado exitosamente")
                         st.rerun()
                     else:
                         st.warning("Por favor, ingrese un DNI válido de 8 dígitos.")
+
 
     if st.session_state.page == 'edit_case' and 'edit_case' in st.session_state:
         case_id = st.session_state.edit_case
@@ -374,15 +379,16 @@ def admin_interface():
             new_dni = st.text_input("Nuevo DNI", value=user['dni'], max_chars=8)
             new_number_phone = st.text_input("Nuevo Celular", value=user['number_phone'], max_chars=9)
             new_role = st.selectbox("Nuevo Rol", ["administrador", "usuario"], index=["administrador", "usuario"].index(user['role']))
-            new_password = st.text_input("Nueva Contraseña", value=user['password'], type='password')
+            new_password = st.text_input("Nueva Contraseña", type='password')
             submit_button = st.form_submit_button("Actualizar Usuario")
             cancel_button = st.form_submit_button("Cancelar")
-    
+
             if submit_button:
+                hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
                 user_management.update_user(
                     user_id=user['user_id'],
                     username=user['username'],
-                    password=new_password,
+                    password=hashed_password.decode('utf-8'),
                     role=new_role,
                     first_name=new_first_name,
                     last_name=new_last_name,
