@@ -5,7 +5,6 @@ from streamlit_option_menu import option_menu
 import datetime
 import matplotlib.pyplot as plt
 import plotly.express as px
-import bcrypt
 
 # Inicializar la gestión de usuarios y casos
 user_management = UserManagement()
@@ -73,7 +72,7 @@ def admin_interface():
 
         if casos:
             df = pd.DataFrame(casos)
-            df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'created_date', 'deadline', 'stage']
+            df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'created_date', 'deadline', 'stage', 'status']
 
             st.subheader('Filtros')
             with st.container():
@@ -173,7 +172,7 @@ def admin_interface():
             casos = user_management.get_all_cases()
             if casos:
                 df = pd.DataFrame(casos)
-                df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'created_date', 'deadline', 'stage']
+                df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'created_date', 'deadline', 'stage', 'status']
                 #st.subheader('Filtros')
                 with st.container():
                     col1, col2 = st.columns(2)
@@ -189,8 +188,8 @@ def admin_interface():
                 if selected_stages:
                     df = df[df['stage'].isin(selected_stages)]
 
-                cols = st.columns((5, 10, 15, 15, 8, 15, 13, 10, 10, 5, 7))
-                headers = ["ID", "Código", "Apellidos", "Nombres", "DNI", "Encargado", "Etapa", "Fecha de Creación", "Fecha de Entrega", "Editar", "Eliminar"]
+                cols = st.columns((5, 10, 15, 15, 8, 15, 13, 10, 10, 11, 5, 7))
+                headers = ["ID", "Código", "Apellidos", "Nombres", "DNI", "Encargado", "Etapa", "Fecha de Creación", "Fecha de Entrega",  "Estado", "Editar", "Eliminar"]
                 for col, header in zip(cols, headers):
                     col.markdown(f"<p class='header-text'>{header}</p>", unsafe_allow_html=True)
 
@@ -204,10 +203,11 @@ def admin_interface():
                     'created_date': 'Fecha de Creación',
                     'deadline': 'Fecha de Entrega',
                     'stage': 'Etapa',
+                    'status':'Estado'
                 })
 
                 for i, row in df.iterrows():
-                    cols = st.columns((5, 10, 15, 15, 8, 15, 13, 10, 10, 5, 7))
+                    cols = st.columns((5, 10, 15, 15, 8, 15, 13, 10, 10, 11, 5, 7))
                     cols[0].write(f"{row['ID']}", unsafe_allow_html=True)
                     cols[1].write(row['Código'])
                     cols[2].write(row['Apellidos'])
@@ -217,11 +217,12 @@ def admin_interface():
                     cols[6].write(row['Etapa'])
                     cols[7].write(f"{row['Fecha de Creación']}", unsafe_allow_html=True)
                     cols[8].write(f"{row['Fecha de Entrega']}", unsafe_allow_html=True)
-                    if cols[9].button("✏️", key=f"edit_{row['ID']}"):
+                    cols[9].write(row['Estado'])
+                    if cols[10].button("✏️", key=f"edit_{row['ID']}"):
                         st.session_state.page = 'edit_case'
                         st.session_state.edit_case = row['ID']
                         st.rerun()
-                    if cols[10].button("🗑️", key=f"delete_{row['ID']}"):
+                    if cols[11].button("🗑️", key=f"delete_{row['ID']}"):
                         st.session_state.page = 'confirm_delete_case'
                         st.session_state.delete_case = row['ID']
                         st.rerun()
@@ -326,13 +327,11 @@ def admin_interface():
 
                 if add_user_button:
                     if validate_dni(dni):
-                        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-                        user_management.create_user(username, hashed_password.decode('utf-8'), role, first_name, last_name, number_phone, dni)
+                        user_management.create_user(username, password, role, first_name, last_name, number_phone, dni)
                         st.success(f"Usuario {first_name} agregado exitosamente")
                         st.rerun()
                     else:
                         st.warning("Por favor, ingrese un DNI válido de 8 dígitos.")
-
 
     if st.session_state.page == 'edit_case' and 'edit_case' in st.session_state:
         case_id = st.session_state.edit_case
@@ -379,16 +378,15 @@ def admin_interface():
             new_dni = st.text_input("Nuevo DNI", value=user['dni'], max_chars=8)
             new_number_phone = st.text_input("Nuevo Celular", value=user['number_phone'], max_chars=9)
             new_role = st.selectbox("Nuevo Rol", ["administrador", "usuario"], index=["administrador", "usuario"].index(user['role']))
-            new_password = st.text_input("Nueva Contraseña", type='password')
+            new_password = st.text_input("Nueva Contraseña", value=user['password'], type='password')
             submit_button = st.form_submit_button("Actualizar Usuario")
             cancel_button = st.form_submit_button("Cancelar")
-
+    
             if submit_button:
-                hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
                 user_management.update_user(
                     user_id=user['user_id'],
                     username=user['username'],
-                    password=hashed_password.decode('utf-8'),
+                    password=new_password,
                     role=new_role,
                     first_name=new_first_name,
                     last_name=new_last_name,

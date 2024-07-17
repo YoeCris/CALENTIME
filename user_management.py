@@ -1,6 +1,5 @@
 # user_management.py
 import mysql.connector
-import bcrypt
 
 class UserManagement:
     def __init__(self):
@@ -24,7 +23,6 @@ class UserManagement:
             print(f"Error: {err}")
 
     def create_user(self, username, password, role, first_name, last_name, number_phone, dni):
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         try:
             sql = "INSERT INTO users (username, password, role, first_name, last_name, number_phone, dni) VALUES (%s, %s, %s, %s, %s, %s, %s)"
             values = (username, password, role, first_name, last_name, number_phone, dni)
@@ -83,7 +81,6 @@ class UserManagement:
         self.update_case_stage(case_id, 'finalizado')
 
     def update_user(self, user_id, username, password, role, first_name, last_name, number_phone, dni):
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         try:
             sql = "UPDATE users SET username = %s, password = %s, role = %s, first_name = %s, last_name = %s, number_phone = %s, dni = %s WHERE user_id = %s"
             self.cursor.execute(sql, (username, password, role, first_name, last_name, number_phone, dni, user_id))

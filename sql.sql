@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS users (
     dni VARCHAR(8) UNIQUE NOT NULL
 );
 
--- Tabla cases
 CREATE TABLE IF NOT EXISTS cases (
     case_id INT AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(20) UNIQUE NOT NULL,
@@ -23,7 +22,8 @@ CREATE TABLE IF NOT EXISTS cases (
     reviewer VARCHAR(20),
     created_date DATE DEFAULT CURRENT_DATE,
     deadline DATE DEFAULT CURRENT_DATE,
-    stage ENUM('preparatoria', 'intermedia', 'juzgamiento') NOT NULL,
+    stage ENUM('Preparatoria', 'Intermedia', 'Juzgamiento') NOT NULL,
+    status ENUM('No revisado', 'En Revision', 'Revisado') NOT NULL,
     FOREIGN KEY (reviewer) REFERENCES users(first_name)
 );
 
