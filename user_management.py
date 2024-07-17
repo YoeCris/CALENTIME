@@ -1,4 +1,5 @@
 # user_management.py
+
 import mysql.connector
 
 class UserManagement:

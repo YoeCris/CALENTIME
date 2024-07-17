@@ -1,3 +1,5 @@
+# user_functions.py
+
 import streamlit as st
 import pandas as pd
 from user_management import UserManagement
@@ -135,6 +137,7 @@ def user_interface():
                         user_management.update_case_stage(row['ID'], 'juzgamiento')
                         st.success(f"El estado del caso {row['Código del Documento']} ha sido actualizado a 'revisado'")
                         st.rerun()
+
             else:
                 st.warning("No hay documentos disponibles para mostrar.")
 
@@ -244,3 +247,4 @@ def mostrar_informacion_del_documento(case):
             cols[i * 2 + 1].markdown(f"""
                 <div style="background-color: lightgray; height: 2px; width: 100%; margin-top: 22px;"></div>
             """, unsafe_allow_html=True)
+
