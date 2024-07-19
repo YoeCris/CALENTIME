@@ -2,24 +2,28 @@
 
 import mysql.connector
 
-class UserManagement:
-    def __init__(self):
-        self.db = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",  
-            database="gestion_casos"  
-        )
-        self.cursor = self.db.cursor(dictionary=True)
-        self.users = self.get_users()
-#SERVER 
 # class UserManagement:
 #     def __init__(self):
 #         self.db = mysql.connector.connect(
-#             host="62.72.8.253",
-#             user="odin",
-#             password="labodin123",  
+#             host="localhost",
+#             user="root",
+#             password="",  
 #             database="gestion_casos"  
+#         )
+#         self.cursor = self.db.cursor(dictionary=True)
+#         self.users = self.get_users()
+#SERVER 
+class UserManagement:
+    def __init__(self):
+        self.db = mysql.connector.connect(
+            host="62.72.8.253",
+            user="odin",
+            password="labodin123",  
+            database="gestion_casos"
+        )
+        self.cursor = self.db.cursor(dictionary=True)
+        self.users = self.get_users()  
+
     # Consultas para la tabla users
     def create_default_superusers(self):
         try:
