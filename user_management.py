@@ -12,7 +12,14 @@ class UserManagement:
         )
         self.cursor = self.db.cursor(dictionary=True)
         self.users = self.get_users()
-    
+#SERVER 
+# class UserManagement:
+#     def __init__(self):
+#         self.db = mysql.connector.connect(
+#             host="62.72.8.253",
+#             user="odin",
+#             password="labodin123",  
+#             database="gestion_casos"  
     # Consultas para la tabla users
     def create_default_superusers(self):
         try:
@@ -156,6 +163,15 @@ class UserManagement:
             sql = "UPDATE cases SET code = %s, investigated_last_name = %s, investigated_first_name = %s, dni = %s, reviewer = %s, created_date = %s, deadline = %s, stage = %s WHERE case_id = %s"
             values = (code, investigated_last_name, investigated_first_name, dni, reviewer, created_date, deadline, stage, case_id)
             self.cursor.execute(sql, values)
+            self.db.commit()
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            self.db.rollback()
+    
+    def update_case_status(self, case_id, new_status):
+        try:
+            sql = "UPDATE cases SET status = %s WHERE case_id = %s"
+            self.cursor.execute(sql, (new_status, case_id))
             self.db.commit()
         except mysql.connector.Error as err:
             print(f"Error: {err}")

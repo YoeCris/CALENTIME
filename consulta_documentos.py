@@ -25,10 +25,10 @@ def mostrar_informacion_del_documento(case):
     st.title("Información del Caso")
 
     # Mostrar la etapa del caso con los colores adecuados
-    stages = ["preparatoria", "intermedia", "juzgamiento"]
+    stages = ["Preparatoria", "Intermedia", "Juzgamiento"]
     current_stage_index = stages.index(case['stage'])
 
-    st.write("**Progreso del Caso:**")
+    st.write("*Progreso del Caso:*")
     cols = st.columns(len(stages) * 2 - 1)  # Create extra columns for the lines between circles
     for i, stage in enumerate(stages):
         if i < current_stage_index:
@@ -57,12 +57,12 @@ def mostrar_informacion_del_documento(case):
     st.markdown("---")
 
     # Mostrar la información del caso
-    st.write(f"**Código del Caso:** {case['code']}")
-    st.write(f"**Apellidos del Investigado:** {case['investigated_last_name']}")
-    st.write(f"**Nombre del Investigado:** {case['investigated_first_name']}")
-    st.write(f"**DNI del Investigado:** {case['dni']}")
-    st.write(f"**Encargado de Revisar el Caso:** {case['reviewer']}")
-    st.write(f"**Fecha de Creación:** {case['created_date']}")
+    st.write(f"*Código del Caso:* {case['code']}")
+    st.write(f"*Apellidos del Investigado:* {case['investigated_last_name']}")
+    st.write(f"*Nombre del Investigado:* {case['investigated_first_name']}")
+    st.write(f"*DNI del Investigado:* {case['dni']}")
+    st.write(f"*Encargado de Revisar el Caso:* {case['reviewer']}")
+    st.write(f"*Fecha de Creación:* {case['created_date']}")
 
     # Calcular la fecha de entrega
     if isinstance(case['created_date'], str):
@@ -75,11 +75,11 @@ def mostrar_informacion_del_documento(case):
     else:
         delivery_date = case['deadline']
     
-    st.write(f"**Fecha de Entrega:** {delivery_date.strftime('%Y-%m-%d')}")
+    st.write(f"*Fecha de Entrega:* {delivery_date.strftime('%Y-%m-%d')}")
 
-    st.write(f"**Etapa del Caso:** {case['stage']}")
+    st.write(f"*Etapa del Caso:* {case['stage']}")
 
     st.markdown("---")
     if st.button("Regresar a Inicio"):
         st.session_state.show_case_info = False
-        st.experimental_rerun()
+        st.rerun()

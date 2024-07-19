@@ -1,5 +1,3 @@
-# user_functions.py
-
 import streamlit as st
 import pandas as pd
 from user_management import UserManagement
@@ -111,14 +109,14 @@ def user_interface():
                     df['semaforo'] = df.apply(lambda row: get_semaforo_color(row['days_left'], row['total_days']), axis=1)
 
                 # Calcular el estado del caso
-                df['state'] = df['Etapa'].apply(lambda x: 'no revisado' if x == 'preparatoria' else ('en proceso' if x == 'intermedia' else 'revisado'))
+                df['state'] = df['Etapa'].apply(lambda x: 'no revisado' if x == 'Preparatoria' else ('en proceso' if x == 'Intermedia' else 'revisado'))
 
                 # Agregar encabezados de columnas
                 st.subheader("Resumen de Casos")
                 cols = st.columns(8)
                 headers = ["", "Código", "Apellidos", "Nombres", "Etapa", "Estado", "", ""]
                 for col, header in zip(cols, headers):
-                    col.write(f"*{header}*")
+                    col.write(f"{header}")
                 
                 # Mostrar la tabla con los casos y botones para iniciar y terminar
                 for i, row in df.iterrows():
@@ -129,14 +127,20 @@ def user_interface():
                     cols[3].write(row['Nombre del Investigado'])
                     cols[4].write(row['Etapa'])
                     cols[5].write(row['state'])
-                    if row['state'] == 'no revisado' and cols[5].button("Iniciar", key=f"iniciar_{row['ID']}"):
-                        user_management.update_case_stage(row['ID'], 'intermedia')
-                        st.success(f"El estado del caso {row['Código del Documento']} ha sido actualizado a 'en proceso'")
-                        st.rerun()
-                    if row['state'] == 'en proceso' and cols[6].button("Terminar", key=f"terminar_{row['ID']}"):
-                        user_management.update_case_stage(row['ID'], 'juzgamiento')
-                        st.success(f"El estado del caso {row['Código del Documento']} ha sido actualizado a 'revisado'")
-                        st.rerun()
+                    with cols[6]:
+                        if row['state'] == 'no revisado':
+                            if st.button("Iniciar", key=f"iniciar_{row['ID']}"):
+                                user_management.update_case_stage(row['ID'], 'Intermedia')
+                                user_management.update_case_status(row['ID'], 'En revisión')
+                                st.success(f"El estado del caso {row['Código del Documento']} ha sido actualizado a 'en proceso'")
+                                st.rerun()  
+                    with cols[7]:
+                        if row['state'] == 'en proceso':
+                            if st.button("Terminar", key=f"terminar_{row['ID']}"):
+                                user_management.update_case_stage(row['ID'], 'Juzgamiento')
+                                user_management.update_case_status(row['ID'], 'Revisado')
+                                st.success(f"El estado del caso {row['Código del Documento']} ha sido actualizado a 'revisado'")
+                                st.rerun() 
 
             else:
                 st.warning("No hay documentos disponibles para mostrar.")
@@ -210,19 +214,19 @@ def consultar_documento_por_id():
                 st.experimental_rerun()
 
 def mostrar_informacion_del_documento(case):
-    st.write("*Código del Caso:*", case['code'])
-    st.write("*Apellidos del Investigado:*", case['investigated_last_name'])
-    st.write("*Nombre del Investigado:*", case['investigated_first_name'])
-    st.write("*DNI del Investigado:*", case['dni'])
-    st.write("*Encargado de Revisar el Caso:*", case['reviewer'])
-    st.write("*Fecha de Creación:*", case['created_date'])
-    st.write("*Fecha de Entrega:*", case['deadline'])
-    st.write("*Etapa del Caso:*", case['stage'])
+    st.write("Código del Caso:", case['code'])
+    st.write("Apellidos del Investigado:", case['investigated_last_name'])
+    st.write("Nombre del Investigado:", case['investigated_first_name'])
+    st.write("DNI del Investigado:", case['dni'])
+    st.write("Encargado de Revisar el Caso:", case['reviewer'])
+    st.write("Fecha de Creación:", case['created_date'])
+    st.write("Fecha de Entrega:", case['deadline'])
+    st.write("Etapa del Caso:", case['stage'])
 
     stages = ["Preparatoria", "Intermedia", "Juzgamiento"]
     current_stage_index = stages.index(case['stage'])
 
-    st.write("*Progreso del Caso:*")
+    st.write("Progreso del Caso:")
     cols = st.columns(len(stages) * 2 - 1)
     for i, stage in enumerate(stages):
         if i < current_stage_index:
@@ -247,4 +251,3 @@ def mostrar_informacion_del_documento(case):
             cols[i * 2 + 1].markdown(f"""
                 <div style="background-color: lightgray; height: 2px; width: 100%; margin-top: 22px;"></div>
             """, unsafe_allow_html=True)
-

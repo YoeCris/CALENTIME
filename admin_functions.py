@@ -5,6 +5,7 @@ from streamlit_option_menu import option_menu
 import datetime
 import matplotlib.pyplot as plt
 import plotly.express as px
+import plotly.graph_objects as go
 
 # Inicializar la gestión de usuarios y casos
 user_management = UserManagement()
@@ -34,18 +35,6 @@ def get_semaforo_color(days_left, total_days):
     else:
         return "🔴"
 
-st.write(
-    """
-    <style>
-    .header-text {
-        font-weight: bold;
-        color: #FFD700;  /* Cambia este valor por el color que prefieras */
-        padding: 5px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 def admin_interface():
     if 'page' not in st.session_state:
         st.session_state.page = 'menu'
@@ -76,85 +65,112 @@ def admin_interface():
 
             st.subheader('Filtros')
             with st.container():
-                col1, col2 = st.columns(2)
+                col1, col2, col3 = st.columns(3)
                 with col1:
                     selected_reviewers = st.multiselect("Filtrar por Encargado", df['reviewer'].unique().tolist(), format_func=lambda x: "Elige una opción" if x == '' else x)
                 with col2:
                     selected_stages = st.multiselect("Filtrar por Etapa", df['stage'].unique().tolist(), format_func=lambda x: "Elige una opción" if x == '' else x)
+                with col3:
+                    selected_statuses = st.multiselect("Filtrar por Estado", df['status'].unique().tolist(), format_func=lambda x: "Elige una opción" if x == '' else x)
 
             # Filtrar los datos según las selecciones del usuario
             if selected_reviewers:
                 df = df[df['reviewer'].isin(selected_reviewers)]
             if selected_stages:
                 df = df[df['stage'].isin(selected_stages)]
+            if selected_statuses:
+                df = df[df['status'].isin(selected_statuses)]
 
             col1, col2 = st.columns(2)
 
             with col1:
-                # Gráfico de distribución de casos por encargado y etapas
-                fig2 = px.bar(
-                    df, 
-                    x='reviewer', 
-                    color='stage', 
-                    barmode='group', 
-                    title='Distribución de Casos por Encargado y Etapa'
-                )
-                st.plotly_chart(fig2)
-
                 # Gráfico de burbujas para supervisar los casos y encargados
                 bubble_df = df.groupby(['reviewer', 'stage']).size().reset_index(name='count')
-                fig3 = px.scatter(
+                fig1 = px.scatter(
                     bubble_df, 
-                    x='reviewer', 
-                    y='stage', 
-                    size='count', 
-                    color='stage', 
-                    title='Supervisión de Casos por Encargado y Etapa',
-                    labels={'count': 'Número de Casos', 'reviewer': 'Encargado', 'stage': 'Etapa'},
-                    hover_data={'count': True}
+                    x = 'reviewer', 
+                    y = 'stage', 
+                    size = 'count', 
+                    color = 'stage', 
+                    title = 'Supervisión de Casos por Encargado y Etapa',
+                    labels = {'count': 'Número de Casos', 'reviewer': 'Encargado', 'stage': 'Etapa'},
+                    hover_data = {'count': True}
                 )
-                st.plotly_chart(fig3)
+                st.plotly_chart(fig1)
 
-            with col2:
                 # Gráfico de casos por estado
                 status_counts = df['stage'].value_counts().reset_index()
                 status_counts.columns = ['stage', 'count']
-                fig4 = px.pie(status_counts, values='count', names='stage', title='Estado de los Casos')
-                st.plotly_chart(fig4)
+                fig2 = px.pie(status_counts, values='count', names='stage', title='Estado de los Casos')
+                st.plotly_chart(fig2)
 
-                # Calcular días restantes y colores de semáforo
-                df['days_left'], df['total_days'] = zip(*df.apply(lambda row: calculate_days_left(row['created_date'], row['deadline']), axis=1))
-                df['semaforo'] = df.apply(lambda row: get_semaforo_color(row['days_left'], row['total_days']), axis=1)
-
-                # Calcular el estado del caso
-                df['state'] = df['stage'].apply(lambda x: 'no revisado' if x == 'Preparatoria' else ('en proceso' if x == 'Intermedia' else 'revisado'))
-                df_final = df[['semaforo', 'code', 'reviewer', 'stage', 'days_left', 'state']]
-
-                df_final = df_final.rename(
-                    columns={
-                        'semaforo': '',
-                        'code': 'Código',
-                        'reviewer': 'Encargado',
-                        'stage': 'Etapa',
-                        'days_left': 'Faltan',
-                        'state': 'Estado'
-                    }
+            with col2:
+                bubble_df = df.groupby(['reviewer', 'status']).size().reset_index(name='count')
+                fig3 = px.scatter(
+                    bubble_df, 
+                    x = 'reviewer', 
+                    y = 'status', 
+                    size = 'count', 
+                    color = 'status', 
+                    title = 'Supervisión de Casos por Encargado y Estado',
+                    labels = {'count': 'Número de Casos', 'reviewer': 'Encargado', 'status': 'Estado'},
+                    color_discrete_map = {'No Revisado': 'red', 'En Revisión': 'green', 'Revisado': 'blue'},
+                    hover_data = {'count': True}
                 )
-                st.subheader("Resumen de Casos")
-                st.dataframe(df_final)
+                st.plotly_chart(fig3)
 
-            # Tabla de resumen de casos por encargado
-            st.subheader("Resumen de Casos por Encargado")
-            reviewer_summary = df.groupby('reviewer').agg({
-                'code': 'count',
-                'stage': lambda x: (x == 'Revisado').sum()
-            }).reset_index()
-            reviewer_summary.columns = ['Encargado', 'Total de Casos', 'Casos Revisados']
-            reviewer_summary['Casos Pendientes'] = reviewer_summary['Total de Casos'] - reviewer_summary['Casos Revisados']
-            st.dataframe(reviewer_summary)
+                # Tabla de resumen de casos por encargado
+                st.subheader("Resumen de Casos por Encargado")
+                reviewer_summary = df.groupby('reviewer').agg({
+                    'code': 'count',
+                    'status': lambda x: (x == 'Revisado').sum()
+                }).reset_index()
+                reviewer_summary.columns = ['Encargado', 'Total de Casos', 'Casos Revisados']
+                reviewer_summary['Casos Pendientes'] = reviewer_summary['Total de Casos'] - reviewer_summary['Casos Revisados']
+                st.dataframe(reviewer_summary)
 
+            # Calcular días restantes y colores de semáforo
+            df['days_left'], df['total_days'] = zip(*df.apply(lambda row: calculate_days_left(row['created_date'], row['deadline']), axis=1))
+            df['semaforo'] = df.apply(lambda row: get_semaforo_color(row['days_left'], row['total_days']), axis=1)
+
+            # Calcular el estado del caso
+            df_final = df[['semaforo', 'code', 'reviewer', 'stage', 'days_left', 'status']]
+
+            df_final = df_final.rename(
+                columns={
+                    'semaforo': '',
+                    'code': 'Código',
+                    'reviewer': 'Encargado',
+                    'stage': 'Etapa',
+                    'days_left': 'Faltan',
+                    'status': 'Estado'
+                }
+            )
+            st.subheader("Resumen de Casos")
+            st.dataframe(df_final)
+
+            st.subheader("Rapidez de Revisión por Encargado")
+            speed_df = df[df['status'] == 'Revisado'].copy()
+            speed_df['review_time'] = speed_df.apply(lambda row: (pd.to_datetime(row['deadline']) - pd.to_datetime(row['created_date'])).days, axis=1)
+            
+            avg_speed_df = speed_df.groupby('reviewer')['review_time'].mean().reset_index()
+            avg_speed_df.columns = ['Encargado', 'Tiempo Promedio de Revisión (días)']
+
+            avg_speed_df = avg_speed_df.sort_values(by='Tiempo Promedio de Revisión (días)')
+            encargado_mes = avg_speed_df.iloc[0]
+
+            fig_speed = px.bar(
+                avg_speed_df,
+                x='Encargado',
+                y='Tiempo Promedio de Revisión (días)',
+                title='Tiempo Promedio de Revisión por Encargado (Casos Revisados)',
+                text='Tiempo Promedio de Revisión (días)'
+            )
+            st.plotly_chart(fig_speed)
+            st.subheader(f"Encargado del Mes: {encargado_mes['Encargado']} con un tiempo promedio de revisión de {encargado_mes['Tiempo Promedio de Revisión (días)']} días")
         else:
             st.warning("No hay casos disponibles para mostrar.")
+
 
             
     elif main_option == "Administrar Casos":
@@ -175,21 +191,24 @@ def admin_interface():
                 df.columns = ['case_id', 'code', 'investigated_last_name', 'investigated_first_name', 'dni', 'reviewer', 'created_date', 'deadline', 'stage', 'status']
                 #st.subheader('Filtros')
                 with st.container():
-                    col1, col2 = st.columns(2)
+                    col1, col2, col3 = st.columns(3)
                     with col1:
                         selected_reviewers = st.multiselect("Filtrar por Encargado", df['reviewer'].unique().tolist(), format_func=lambda x: "Elige una opción" if x == '' else x)
                     with col2:
                         selected_stages = st.multiselect("Filtrar por Etapa", df['stage'].unique().tolist(), format_func=lambda x: "Elige una opción" if x == '' else x)
-
+                    with col3:
+                        selected_statuses = st.multiselect("Filtrar por Estado", df['status'].unique().tolist(), format_func=lambda x: "Elige una opción" if x == '' else x)
 
                 # Filtrar los datos según las selecciones del usuario
                 if selected_reviewers:
                     df = df[df['reviewer'].isin(selected_reviewers)]
                 if selected_stages:
                     df = df[df['stage'].isin(selected_stages)]
+                if selected_statuses:
+                    df = df[df['status'].isin(selected_statuses)]
 
-                cols = st.columns((5, 10, 15, 15, 8, 15, 13, 10, 10, 11, 5, 7))
-                headers = ["ID", "Código", "Apellidos", "Nombres", "DNI", "Encargado", "Etapa", "Fecha de Creación", "Fecha de Entrega",  "Estado", "Editar", "Eliminar"]
+                cols = st.columns((5, 20, 15, 15, 8, 15, 13, 10, 10, 11, 6, 7))
+                headers = ["ID", "Código del Caso", "Apellidos", "Nombres", "DNI", "Encargado", "Etapa", "Fecha de Creación", "Fecha de Entrega",  "Estado", "Editar", "Eliminar"]
                 for col, header in zip(cols, headers):
                     col.markdown(f"<p class='header-text'>{header}</p>", unsafe_allow_html=True)
 
@@ -207,7 +226,7 @@ def admin_interface():
                 })
 
                 for i, row in df.iterrows():
-                    cols = st.columns((5, 10, 15, 15, 8, 15, 13, 10, 10, 11, 5, 7))
+                    cols = st.columns((5, 20, 15, 15, 8, 15, 13, 10, 10, 11, 6, 7))
                     cols[0].write(f"{row['ID']}", unsafe_allow_html=True)
                     cols[1].write(row['Código'])
                     cols[2].write(row['Apellidos'])
@@ -285,14 +304,14 @@ def admin_interface():
                     'dni': 'DNI',
                 })
 
-                cols = st.columns((3, 10, 7, 13, 15, 15, 9, 8, 5, 5))
+                cols = st.columns((3, 10, 10, 13, 15, 15, 9, 8, 5, 5))
                 headers = ["ID", "Usuario", "Contraseña", "Rol", "Nombres", "Apellidos", "Celular", "DNI", "Editar", "Eliminar"]
                 for col, header in zip(cols, headers):
                     col.markdown(f"<p class='header-text'>{header}</p>", unsafe_allow_html=True)
 
 
                 for i, row in df.iterrows():
-                    cols = st.columns((3, 10, 7, 13, 15, 15, 9, 8, 5, 5))
+                    cols = st.columns((3, 10, 10, 13, 15, 15, 9, 8, 5, 5))
                     cols[0].write(f"{row['ID']}", unsafe_allow_html=True)
                     cols[1].write(row['Nombre de Usuario'])
                     cols[2].write(row['Contraseña'])
@@ -322,7 +341,7 @@ def admin_interface():
                 number_phone = st.text_input("Celular", max_chars=9)
                 username = st.text_input("Nombre de Usuario")
                 password = st.text_input("Contraseña", type='password')
-                role = st.selectbox("Rol", ["administrador", "usuario"])
+                role = st.selectbox("Rol", ["Usuario", "Administrador"])
                 add_user_button = st.form_submit_button("Agregar Usuario")
 
                 if add_user_button:
@@ -353,7 +372,7 @@ def admin_interface():
             normal_users = [user['first_name'] for user in users if user['role'] == 'usuario']
             reviewer = st.selectbox("Encargado de Revisar el Caso", normal_users, index=normal_users.index(case.get('reviewer', '')))
 
-            stage = st.selectbox("Etapa del Caso", ['Preparatoria', 'Intermedia', 'Juzgamiento'], index=['preparatoria', 'intermedia', 'juzgamiento'].index(case.get('stage', 'preparatoria')))
+            stage = st.selectbox("Etapa del Caso", ['Preparatoria', 'Intermedia', 'Juzgamiento'], index=['Preparatoria', 'Intermedia', 'Juzgamiento'].index(case.get('stage', 'Preparatoria')))
             edit_case_button = st.form_submit_button("Actualizar Caso")
             cancel_button = st.form_submit_button("Cancelar")
 
@@ -377,7 +396,7 @@ def admin_interface():
             new_last_name = st.text_input("Nuevo Apellido", value=user['last_name'], disabled=True)
             new_dni = st.text_input("Nuevo DNI", value=user['dni'], max_chars=8)
             new_number_phone = st.text_input("Nuevo Celular", value=user['number_phone'], max_chars=9)
-            new_role = st.selectbox("Nuevo Rol", ["administrador", "usuario"], index=["administrador", "usuario"].index(user['role']))
+            new_role = st.selectbox("Nuevo Rol", ["Administrador", "Usuario"], index=["administrador", "usuario"].index(user['role']))
             new_password = st.text_input("Nueva Contraseña", value=user['password'], type='password')
             submit_button = st.form_submit_button("Actualizar Usuario")
             cancel_button = st.form_submit_button("Cancelar")
